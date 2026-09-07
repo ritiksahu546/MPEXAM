@@ -1,0 +1,133 @@
+{
+  "entities": {
+    "Post": {
+      "title": "Post",
+      "description": "Job alert, admit card, result, or answer key post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 300 },
+        "titleHindi": { "type": "string", "maxLength": 300 },
+        "slug": { "type": "string", "maxLength": 150 },
+        "excerpt": { "type": "string", "maxLength": 1000 },
+        "content": { "type": "string", "maxLength": 50000 },
+        "categoryId": { "type": "string", "maxLength": 64 },
+        "categoryName": { "type": "string", "maxLength": 100 },
+        "postType": { "type": "string", "enum": ["job", "admit_card", "result", "answer_key", "syllabus", "scheme"] },
+        "organization": { "type": "string", "maxLength": 120 },
+        "vacancy": { "type": "string", "maxLength": 100 },
+        "qualification": { "type": "string", "maxLength": 200 },
+        "salary": { "type": "string", "maxLength": 100 },
+        "ageLimit": { "type": "string", "maxLength": 200 },
+        "applicationStartDate": { "type": "string", "maxLength": 50 },
+        "applicationLastDate": { "type": "string", "maxLength": 50 },
+        "examDate": { "type": "string", "maxLength": 50 },
+        "applicationFee": { "type": "string", "maxLength": 500 },
+        "selectionProcess": { "type": "string", "maxLength": 1000 },
+        "examPattern": { "type": "string", "maxLength": 2000 },
+        "syllabus": { "type": "string", "maxLength": 2000 },
+        "documentsRequired": { "type": "string", "maxLength": 1000 },
+        "howToApply": { "type": "string", "maxLength": 2000 },
+        "officialWebsite": { "type": "string", "maxLength": 500 },
+        "applyLink": { "type": "string", "maxLength": 500 },
+        "notificationPdf": { "type": "string", "maxLength": 500 },
+        "admitCardLink": { "type": "string", "maxLength": 500 },
+        "resultLink": { "type": "string", "maxLength": 500 },
+        "answerKeyLink": { "type": "string", "maxLength": 500 },
+        "featuredImage": { "type": "string", "maxLength": 500 },
+        "seoTitle": { "type": "string", "maxLength": 200 },
+        "seoDescription": { "type": "string", "maxLength": 300 },
+        "focusKeyword": { "type": "string", "maxLength": 100 },
+        "secondaryKeywords": { "type": "string", "maxLength": 300 },
+        "status": { "type": "string", "enum": ["published", "draft", "archived"] },
+        "featured": { "type": "boolean" },
+        "viewCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "slug", "categoryId", "postType", "status"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Category for classification of exam and job alerts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "nameHindi": { "type": "string", "maxLength": 100 },
+        "nameEnglish": { "type": "string", "maxLength": 100 },
+        "slug": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 },
+        "order": { "type": "number" },
+        "icon": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["nameHindi", "nameEnglish", "slug"]
+    },
+    "AdSlot": {
+      "title": "AdSlot",
+      "description": "Advertisement slot configuration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "slotKey": { "type": "string", "maxLength": 64 },
+        "label": { "type": "string", "maxLength": 100 },
+        "enabled": { "type": "boolean" },
+        "adCode": { "type": "string", "maxLength": 5000 },
+        "format": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["slotKey", "enabled"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global website settings and SEO tags",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string", "maxLength": 100 },
+        "siteTagline": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 500 },
+        "contactEmail": { "type": "string", "maxLength": 100 },
+        "telegramLink": { "type": "string", "maxLength": 300 },
+        "whatsappLink": { "type": "string", "maxLength": 300 },
+        "youtubeLink": { "type": "string", "maxLength": 300 },
+        "googleAnalyticsId": { "type": "string", "maxLength": 50 },
+        "adSensePublisherId": { "type": "string", "maxLength": 50 },
+        "searchConsoleCode": { "type": "string", "maxLength": 100 }
+      }
+    },
+    "ImportantLink": {
+      "title": "ImportantLink",
+      "description": "Official government and examination links",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 100 },
+        "url": { "type": "string", "maxLength": 500 },
+        "description": { "type": "string", "maxLength": 200 },
+        "icon": { "type": "string", "maxLength": 50 },
+        "category": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["title", "url"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Job, admit card, result and answer key posts"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Categories of posts"
+    },
+    "/ads/{adId}": {
+      "schema": "AdSlot",
+      "description": "Ad slot configurations"
+    },
+    "/links/{linkId}": {
+      "schema": "ImportantLink",
+      "description": "Official examination portal links"
+    },
+    "/settings/general": {
+      "schema": "SiteSettings",
+      "description": "Global portal settings"
+    }
+  }
+}

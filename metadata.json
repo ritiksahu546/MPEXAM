@@ -1,0 +1,6 @@
+{
+  "name": "MP Exam Update",
+  "description": "मध्य प्रदेश सरकारी नौकरी, MPPSC, MPESB, पुलिस भर्ती, एडमिट कार्ड, रिजल्ट और परीक्षा अपडेट का सबसे विश्वसनीय पोर्टल।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
