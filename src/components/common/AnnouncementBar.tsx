@@ -22,12 +22,12 @@ export const AnnouncementBar: React.FC<Props> = ({ settings, onNavigate }) => {
   return (
     <aside aria-label="Announcement" className="bg-gradient-to-r from-red-600 to-amber-600 text-white text-xs sm:text-sm py-2 px-3 sm:px-4 shadow-inner">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 overflow-hidden">
-        <div className="flex items-center gap-2 font-bold shrink-0 bg-red-700/80 px-2.5 py-0.5 rounded text-[11px] uppercase tracking-wider">
-          <Megaphone className="w-3.5 h-3.5 animate-pulse" />
+        <div className="flex items-center gap-1.5 sm:gap-2 font-bold shrink-0 bg-red-700/80 px-2 sm:px-2.5 py-0.5 rounded text-[10px] sm:text-[11px] uppercase tracking-wider">
+          <Megaphone className="w-3.5 h-3.5 animate-pulse shrink-0" />
           <span>ताज़ा अपडेट</span>
         </div>
         
-        <div className="flex-1 truncate">
+        <div className="flex-1 min-w-0 truncate">
           {settings.announcement.link ? (
             <a 
               href={settings.announcement.link} 

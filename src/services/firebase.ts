@@ -1,28 +1,24 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
-  getAuth, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
+  app, 
+  auth, 
+  db, 
+  firestore, 
+  storage, 
+  isFirebaseConfigured, 
+  missingFirebaseEnvVars,
+  uploadImageToStorage,
+  uploadPdfToStorage,
+  verifyAdminAuthorization 
+} from '../lib/firebase';
+import { 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged,
+  onAuthStateChanged, 
+  GoogleAuthProvider, 
+  signInWithPopup,
   User 
 } from 'firebase/auth';
-import { 
-  getFirestore, 
-  initializeFirestore,
-  FirestoreSettings,
-  doc, 
-  getDocFromServer,
-  collection,
-  getDocs,
-  setDoc,
-  updateDoc,
-  deleteDoc
-} from 'firebase/firestore';
-
-import firebaseConfig from '../../firebase-applet-config.json';
+import { doc, getDocFromServer } from 'firebase/firestore';
 
 export enum OperationType {
   CREATE = 'create',
@@ -50,49 +46,8 @@ export interface FirestoreErrorInfo {
   };
 }
 
-export const isFirebaseConfigured = Boolean(
-  firebaseConfig && firebaseConfig.apiKey && firebaseConfig.projectId
-);
-
-let app: ReturnType<typeof initializeApp> | null = null;
-let authInstance: ReturnType<typeof getAuth> | null = null;
-let dbInstance: ReturnType<typeof getFirestore> | null = null;
-
-if (isFirebaseConfigured) {
-  try {
-    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    authInstance = getAuth(app);
-
-    // Forces the SDK's underlying transport (WebChannel) to use long-polling.
-    // This is required in iframe preview and proxy container environments to prevent
-    // WebChannel streaming connection drops and [code=unavailable] backend errors.
-    const firestoreSettings: FirestoreSettings = {
-      experimentalForceLongPolling: true,
-    };
-
-    if (firebaseConfig.firestoreDatabaseId) {
-      try {
-        dbInstance = initializeFirestore(app, firestoreSettings, firebaseConfig.firestoreDatabaseId);
-      } catch {
-        dbInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-      }
-    } else {
-      try {
-        dbInstance = initializeFirestore(app, firestoreSettings);
-      } catch {
-        dbInstance = getFirestore(app);
-      }
-    }
-  } catch (err) {
-    console.warn('Firebase initialization error, fallback to local storage mode:', err);
-  }
-}
-
-export const auth = authInstance;
-export const db = dbInstance;
-
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
-  const currentAuth = authInstance?.currentUser;
+  const currentAuth = auth?.currentUser;
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
@@ -114,17 +69,16 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 }
 
 export async function testFirebaseConnection(): Promise<boolean> {
-  if (!dbInstance) return false;
+  if (!db) return false;
   try {
-    await getDocFromServer(doc(dbInstance, 'test', 'connection'));
+    await getDocFromServer(doc(db, 'test', 'connection'));
     return true;
   } catch (error: any) {
-    // Gracefully handle transient offline or unavailable states without breaking application flow
     if (
       error?.code === 'unavailable' || 
       (error instanceof Error && (error.message.includes('the client is offline') || error.message.includes('unavailable')))
     ) {
-      console.warn('Firebase connection test: backend temporarily unreachable or operating offline. App will use local cache.');
+      console.warn('Firebase connection: operating in offline or fallback cached mode.');
     } else {
       console.warn('Firebase connection test notice:', error);
     }
@@ -132,17 +86,38 @@ export async function testFirebaseConnection(): Promise<boolean> {
   }
 }
 
+export async function loginWithEmail(email: string, pass: string) {
+  if (!auth) {
+    throw new Error('Firebase Auth is not initialized. Please verify your Firebase configuration in .env');
+  }
+  const cred = await signInWithEmailAndPassword(auth, email, pass);
+  return cred.user;
+}
+
 export async function signInWithGoogle() {
-  if (!authInstance) {
-    throw new Error('Firebase Auth is not configured. Please set your Firebase credentials in .env or Settings.');
+  if (!auth) {
+    throw new Error('Firebase Auth is not configured. Please set your Firebase credentials.');
   }
   const provider = new GoogleAuthProvider();
-  return await signInWithPopup(authInstance, provider);
+  return await signInWithPopup(auth, provider);
 }
 
 export async function logOut() {
-  if (!authInstance) return;
-  await signOut(authInstance);
+  if (!auth) return;
+  await signOut(auth);
 }
 
-export { onAuthStateChanged };
+export { 
+  app, 
+  auth, 
+  db, 
+  firestore, 
+  storage, 
+  isFirebaseConfigured, 
+  missingFirebaseEnvVars,
+  uploadImageToStorage,
+  uploadPdfToStorage,
+  verifyAdminAuthorization,
+  onAuthStateChanged,
+  signInWithEmailAndPassword
+};

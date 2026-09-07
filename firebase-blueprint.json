@@ -14,11 +14,17 @@
         "categoryId": { "type": "string", "maxLength": 64 },
         "categoryName": { "type": "string", "maxLength": 100 },
         "postType": { "type": "string", "enum": ["job", "admit_card", "result", "answer_key", "syllabus", "scheme"] },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "featuredImage": { "type": "string", "maxLength": 500 },
+        "notificationPdf": { "type": "string", "maxLength": 500 },
+        "notificationLink": { "type": "string", "maxLength": 500 },
         "organization": { "type": "string", "maxLength": 120 },
+        "postType": { "type": "string", "enum": ["job", "admit_card", "result", "answer_key", "syllabus", "scheme"] },
         "vacancy": { "type": "string", "maxLength": 100 },
         "qualification": { "type": "string", "maxLength": 200 },
         "salary": { "type": "string", "maxLength": 100 },
         "ageLimit": { "type": "string", "maxLength": 200 },
+        "ageRelaxation": { "type": "string", "maxLength": 500 },
         "applicationStartDate": { "type": "string", "maxLength": 50 },
         "applicationLastDate": { "type": "string", "maxLength": 50 },
         "examDate": { "type": "string", "maxLength": 50 },
@@ -30,20 +36,20 @@
         "howToApply": { "type": "string", "maxLength": 2000 },
         "officialWebsite": { "type": "string", "maxLength": 500 },
         "applyLink": { "type": "string", "maxLength": 500 },
-        "notificationPdf": { "type": "string", "maxLength": 500 },
         "admitCardLink": { "type": "string", "maxLength": 500 },
         "resultLink": { "type": "string", "maxLength": 500 },
         "answerKeyLink": { "type": "string", "maxLength": 500 },
-        "featuredImage": { "type": "string", "maxLength": 500 },
         "seoTitle": { "type": "string", "maxLength": 200 },
         "seoDescription": { "type": "string", "maxLength": 300 },
         "focusKeyword": { "type": "string", "maxLength": 100 },
         "secondaryKeywords": { "type": "string", "maxLength": 300 },
+        "canonicalUrl": { "type": "string", "maxLength": 500 },
         "status": { "type": "string", "enum": ["published", "draft", "archived"] },
         "featured": { "type": "boolean" },
         "viewCount": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "publishedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "slug", "categoryId", "postType", "status"]
     },
@@ -106,6 +112,42 @@
         "category": { "type": "string", "maxLength": 50 }
       },
       "required": ["title", "url"]
+    },
+    "Tag": {
+      "title": "Tag",
+      "description": "Tag for search and categorization",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 100 },
+        "slug": { "type": "string", "maxLength": 100 },
+        "postCount": { "type": "number" }
+      },
+      "required": ["name", "slug"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Admin user profile and permissions",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "editor"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "HomepageSection": {
+      "title": "HomepageSection",
+      "description": "Configurable section visibility and ordering on homepage",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 100 },
+        "enabled": { "type": "boolean" },
+        "order": { "type": "number" }
+      },
+      "required": ["title", "enabled"]
     }
   },
   "firestore": {
@@ -117,6 +159,14 @@
       "schema": "Category",
       "description": "Categories of posts"
     },
+    "/tags/{tagId}": {
+      "schema": "Tag",
+      "description": "Post tags"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Authorized administrator accounts"
+    },
     "/ads/{adId}": {
       "schema": "AdSlot",
       "description": "Ad slot configurations"
@@ -125,9 +175,17 @@
       "schema": "ImportantLink",
       "description": "Official examination portal links"
     },
+    "/siteSettings/{docId}": {
+      "schema": "SiteSettings",
+      "description": "Site global configuration settings"
+    },
+    "/homepageSections/{sectionId}": {
+      "schema": "HomepageSection",
+      "description": "Homepage layout section toggles"
+    },
     "/settings/general": {
       "schema": "SiteSettings",
-      "description": "Global portal settings"
+      "description": "Global portal settings legacy path"
     }
   }
 }

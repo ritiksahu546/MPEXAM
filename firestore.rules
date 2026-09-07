@@ -14,8 +14,9 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        (request.auth.token.email == "gig.ritik546@gmail.com" && request.auth.token.email_verified == true) ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        request.auth.token.email == "gig.ritik546@gmail.com" ||
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin')
       );
     }
 
@@ -49,6 +50,13 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Tags collection: Public can read. Admin can modify.
+    match /tags/{tagId} {
+      allow get: if isValidId(tagId);
+      allow list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     // Ads collection: Public can read configurations. Admin can modify.
     match /ads/{adId} {
       allow get: if isValidId(adId);
@@ -63,9 +71,22 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // Settings collection: Public can read general site settings. Admin can write.
+    // Settings / SiteSettings collection: Public can read general site settings. Admin can write.
     match /settings/{settingId} {
       allow get: if isValidId(settingId);
+      allow list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /siteSettings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Homepage sections collection
+    match /homepageSections/{sectionId} {
+      allow get: if isValidId(sectionId);
       allow list: if true;
       allow create, update, delete: if isAdmin();
     }

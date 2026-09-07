@@ -1,30 +1,39 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Post, 
   Category, 
+  Tag,
   AdSlotConfig, 
   ImportantLink, 
   SiteSettings, 
-  UserProfile 
+  UserProfile,
+  HomepageSectionsConfig 
 } from './types';
 import { 
   getPosts, 
   getCategories, 
+  getTags,
   getAdSlots, 
   getImportantLinks, 
   getSettings,
+  getHomepageSections,
   savePost,
   deletePost,
   incrementPostViews,
   saveCategory,
   deleteCategory,
+  saveTag,
+  deleteTag,
   updateAdSlot,
   saveImportantLink,
   deleteImportantLink,
   updateSettings,
+  saveHomepageSections,
   getDemoAdminUser,
   setDemoAdminUser,
-  resetToSampleData
+  resetToSampleData,
+  seedInitialDataToFirestore,
+  INITIAL_HOMEPAGE_SECTIONS
 } from './services/storage';
 import { onAuthStateChanged, auth, logOut, testFirebaseConnection } from './services/firebase';
 
@@ -38,34 +47,49 @@ import { JobsListView } from './components/views/JobsListView';
 import { StaticPageView } from './components/views/StaticPageView';
 import { SitemapView } from './components/views/SitemapView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { AdminLoginView } from './components/admin/AdminLoginView';
 import { INITIAL_POSTS, INITIAL_CATEGORIES, INITIAL_AD_SLOTS, INITIAL_IMPORTANT_LINKS, INITIAL_SITE_SETTINGS } from './data/initialData';
 
 export default function App() {
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [adSlots, setAdSlots] = useState<AdSlotConfig[]>(INITIAL_AD_SLOTS);
   const [importantLinks, setImportantLinks] = useState<ImportantLink[]>(INITIAL_IMPORTANT_LINKS);
   const [settings, setSettings] = useState<SiteSettings>(INITIAL_SITE_SETTINGS);
+  const [homepageSections, setHomepageSections] = useState<HomepageSectionsConfig>(INITIAL_HOMEPAGE_SECTIONS);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(getDemoAdminUser());
   const [currentRoute, setCurrentRoute] = useState<string>('home');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load data
+  // Load all CMS data
   const refreshData = useCallback(async () => {
     try {
-      const [fetchedPosts, fetchedCats, fetchedAds, fetchedLinks, fetchedSettings] = await Promise.all([
+      const [
+        fetchedPosts, 
+        fetchedCats, 
+        fetchedTags, 
+        fetchedAds, 
+        fetchedLinks, 
+        fetchedSettings,
+        fetchedSections
+      ] = await Promise.all([
         getPosts(),
         getCategories(),
+        getTags(),
         getAdSlots(),
         getImportantLinks(),
-        getSettings()
+        getSettings(),
+        getHomepageSections()
       ]);
       setPosts(fetchedPosts);
       setCategories(fetchedCats);
+      setTags(fetchedTags);
       setAdSlots(fetchedAds);
       setImportantLinks(fetchedLinks);
       setSettings(fetchedSettings);
+      setHomepageSections(fetchedSections);
     } catch (err) {
       console.error('Error loading data:', err);
     } finally {
@@ -85,7 +109,8 @@ export default function App() {
             uid: user.uid,
             email: user.email || '',
             displayName: user.displayName || 'Admin',
-            role: 'admin'
+            role: 'admin',
+            isAdmin: true
           });
         }
       });
@@ -128,6 +153,11 @@ export default function App() {
     navigate(`job/${slug}`);
   };
 
+  // Only published posts for public view (Requirement #7)
+  const publishedPosts = useMemo(() => {
+    return posts.filter(p => p.status === 'published');
+  }, [posts]);
+
   // Admin Actions
   const handleSavePost = async (post: Post) => {
     const saved = await savePost(post);
@@ -165,6 +195,24 @@ export default function App() {
     setCategories(prev => prev.filter(c => c.id !== catId));
   };
 
+  const handleSaveTag = async (tag: Tag) => {
+    const saved = await saveTag(tag);
+    setTags(prev => {
+      const idx = prev.findIndex(t => t.id === saved.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = saved;
+        return next;
+      }
+      return [...prev, saved];
+    });
+  };
+
+  const handleDeleteTag = async (tagId: string) => {
+    await deleteTag(tagId);
+    setTags(prev => prev.filter(t => t.id !== tagId));
+  };
+
   const handleUpdateAdSlot = async (slot: AdSlotConfig) => {
     await updateAdSlot(slot);
     setAdSlots(prev => prev.map(s => s.slotKey === slot.slotKey ? slot : s));
@@ -193,9 +241,19 @@ export default function App() {
     setSettings(saved);
   };
 
+  const handleSaveHomepageSections = async (sections: HomepageSectionsConfig) => {
+    const saved = await saveHomepageSections(sections);
+    setHomepageSections(saved);
+  };
+
   const handleResetData = () => {
     resetToSampleData();
     refreshData();
+  };
+
+  const handleSeedData = async () => {
+    await seedInitialDataToFirestore();
+    await refreshData();
   };
 
   const handleLogin = (user: UserProfile) => {
@@ -211,10 +269,11 @@ export default function App() {
 
   // Route Dispatcher
   const renderCurrentView = () => {
+    // 1. Home View
     if (currentRoute === 'home' || currentRoute === '') {
       return (
         <HomeView
-          posts={posts}
+          posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
           importantLinks={importantLinks}
@@ -225,8 +284,9 @@ export default function App() {
       );
     }
 
-    if (currentRoute.startsWith('job/')) {
-      const slug = currentRoute.replace('job/', '');
+    // 2. Job or Post Single Article View (/job/:slug or /post/:slug - Requirement #9)
+    if (currentRoute.startsWith('job/') || currentRoute.startsWith('post/')) {
+      const slug = currentRoute.replace(/^(job|post)\//, '');
       const post = posts.find(p => p.slug === slug || p.id === slug);
       if (!post) {
         return (
@@ -236,8 +296,9 @@ export default function App() {
               संभवतः यह पोस्ट हटा दी गई है या लिंक अमान्य है।
             </p>
             <button
+              type="button"
               onClick={() => navigate('home')}
-              className="mt-4 px-4 py-2 bg-blue-700 text-white font-bold text-xs rounded-lg"
+              className="mt-4 px-4 py-2 bg-blue-700 text-white font-bold text-xs rounded-lg cursor-pointer"
             >
               होमपेज पर वापस जाएं
             </button>
@@ -245,7 +306,7 @@ export default function App() {
         );
       }
 
-      const relatedPosts = posts.filter(p => p.id !== post.id && p.categoryId === post.categoryId);
+      const relatedPosts = publishedPosts.filter(p => p.id !== post.id && p.categoryId === post.categoryId);
 
       return (
         <JobDetailView
@@ -259,10 +320,11 @@ export default function App() {
       );
     }
 
+    // 3. Jobs Listing View
     if (currentRoute === 'jobs') {
       return (
         <JobsListView
-          posts={posts}
+          posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
           initialPostType="job"
@@ -273,10 +335,11 @@ export default function App() {
       );
     }
 
+    // 4. Admit Cards Listing
     if (currentRoute === 'admit-cards') {
       return (
         <JobsListView
-          posts={posts}
+          posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
           initialPostType="admit_card"
@@ -287,10 +350,11 @@ export default function App() {
       );
     }
 
+    // 5. Results Listing
     if (currentRoute === 'results') {
       return (
         <JobsListView
-          posts={posts}
+          posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
           initialPostType="result"
@@ -301,10 +365,11 @@ export default function App() {
       );
     }
 
+    // 6. Answer Keys Listing
     if (currentRoute === 'answer-keys') {
       return (
         <JobsListView
-          posts={posts}
+          posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
           initialPostType="answer_key"
@@ -315,12 +380,13 @@ export default function App() {
       );
     }
 
+    // 7. Dedicated Category Pages (/category/:slug - Requirement #8)
     if (currentRoute.startsWith('category/')) {
       const catSlug = currentRoute.replace('category/', '');
       const cat = categories.find(c => c.slug === catSlug || c.id === catSlug);
       return (
         <JobsListView
-          posts={posts}
+          posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
           initialCategorySlug={cat?.id || catSlug}
@@ -331,10 +397,11 @@ export default function App() {
       );
     }
 
+    // 8. Categories Hub
     if (currentRoute === 'categories') {
       return (
         <JobsListView
-          posts={posts}
+          posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
           pageTitle="समस्त श्रेणियां एवं विभाग (All MP Recruitment Categories)"
@@ -344,6 +411,7 @@ export default function App() {
       );
     }
 
+    // 9. Static / Legal Pages (Requirement #22)
     if (['about', 'contact', 'privacy-policy', 'terms-and-conditions', 'disclaimer', 'advertisement'].includes(currentRoute)) {
       return (
         <StaticPageView
@@ -354,24 +422,38 @@ export default function App() {
       );
     }
 
-    if (currentRoute === 'sitemap') {
+    // 10. Sitemap (Requirement #15)
+    if (currentRoute === 'sitemap' || currentRoute === 'sitemap.xml') {
       return (
         <SitemapView
-          posts={posts}
+          posts={publishedPosts}
           categories={categories}
           onNavigate={navigate}
         />
       );
     }
 
+    // 11. Admin Panel / Admin Login (Requirement #2 & #3)
     if (currentRoute === 'admin') {
+      if (!currentUser) {
+        return (
+          <AdminLoginView
+            settings={settings}
+            onSuccess={handleLogin}
+            onNavigateHome={() => navigate('home')}
+          />
+        );
+      }
+
       return (
         <AdminDashboard
           posts={posts}
           categories={categories}
+          tags={tags}
           adSlots={adSlots}
           importantLinks={importantLinks}
           settings={settings}
+          homepageSections={homepageSections}
           currentUser={currentUser}
           onLogin={handleLogin}
           onLogout={handleLogout}
@@ -379,19 +461,25 @@ export default function App() {
           onDeletePost={handleDeletePost}
           onSaveCategory={handleSaveCategory}
           onDeleteCategory={handleDeleteCategory}
+          onSaveTag={handleSaveTag}
+          onDeleteTag={handleDeleteTag}
           onUpdateAdSlot={handleUpdateAdSlot}
           onSaveImportantLink={handleSaveImportantLink}
           onDeleteImportantLink={handleDeleteImportantLink}
           onSaveSettings={handleSaveSettings}
+          onSaveHomepageSections={handleSaveHomepageSections}
           onResetData={handleResetData}
+          onSeedData={handleSeedData}
           onViewPost={handleSelectPost}
+          onNavigateHome={() => navigate('home')}
         />
       );
     }
 
+    // Default Fallback
     return (
       <HomeView
-        posts={posts}
+        posts={publishedPosts}
         categories={categories}
         adSlots={adSlots}
         importantLinks={importantLinks}
@@ -402,9 +490,18 @@ export default function App() {
     );
   };
 
+  // If viewing admin dashboard while authenticated, render full-screen admin experience
+  if (currentRoute === 'admin' && currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-100 font-sans antialiased text-slate-900">
+        {renderCurrentView()}
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white">
-      {/* Top Ticker Alert Bar */}
+    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white max-w-full overflow-x-hidden">
+      {/* Top Ticker Alert Bar (Requirement #20) */}
       <AnnouncementBar
         settings={settings}
         onNavigate={navigate}
@@ -436,7 +533,7 @@ export default function App() {
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
-        posts={posts}
+        posts={publishedPosts}
         onSelectPost={handleSelectPost}
       />
     </div>

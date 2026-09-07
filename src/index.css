@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
 @layer base {
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     font-family: 'Mukta', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     color: #1e293b;

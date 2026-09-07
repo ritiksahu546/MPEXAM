@@ -102,63 +102,68 @@ export const Header: React.FC<Props> = ({
       </div>
 
       {/* Main Branding & Action Bar */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Mobile menu toggle */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 -ml-1 text-slate-700 hover:text-blue-700 hover:bg-slate-100 rounded-lg"
-          aria-label="Toggle Navigation"
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-1.5 sm:gap-4 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
+          {/* Mobile menu toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-1.5 sm:p-2 -ml-0.5 text-slate-700 hover:text-blue-700 hover:bg-slate-100 rounded-lg shrink-0 transition-colors"
+            aria-label="Toggle Navigation"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
+          </button>
 
-        {/* Logo */}
-        <div 
-          onClick={() => handleNav('home')}
-          className="cursor-pointer flex items-center gap-2.5 shrink-0 select-none group"
-        >
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-blue-800 via-blue-700 to-amber-500 text-white flex items-center justify-center font-black text-lg sm:text-xl shadow-md border border-blue-900/20 group-hover:scale-105 transition-transform">
-            <span>MP</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-none group-hover:text-blue-800 transition-colors">
-                MP Exam Update
-              </span>
-              <span className="hidden sm:inline-block bg-amber-500 text-slate-950 font-bold text-[10px] px-1.5 py-0.2 rounded uppercase">
-                MP 2026
-              </span>
+          {/* Logo */}
+          <div 
+            onClick={() => handleNav('home')}
+            className="cursor-pointer flex items-center gap-2 sm:gap-2.5 min-w-0 select-none group"
+          >
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-blue-800 via-blue-700 to-amber-500 text-white flex items-center justify-center font-black text-base sm:text-xl shadow-md border border-blue-900/20 group-hover:scale-105 transition-transform shrink-0">
+              <span>MP</span>
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-none mt-1">
-              मध्य प्रदेश सरकारी नौकरी एवं परीक्षा पोर्टल
-            </p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base sm:text-2xl font-black text-slate-900 tracking-tight leading-none group-hover:text-blue-800 transition-colors truncate">
+                  MP Exam Update
+                </span>
+                <span className="hidden md:inline-block bg-amber-500 text-slate-950 font-bold text-[10px] px-1.5 py-0.2 rounded uppercase shrink-0">
+                  MP 2026
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-none mt-1 truncate hidden sm:block">
+                मध्य प्रदेश सरकारी नौकरी एवं परीक्षा पोर्टल
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Quick Search trigger on desktop and mobile */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={onOpenSearch}
-            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-150 border border-slate-300/80 rounded-full py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm text-slate-500 hover:text-slate-800 transition-colors shadow-2xs group w-36 sm:w-64 md:w-80 justify-between"
+            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200/80 border border-slate-300/80 rounded-full py-1.5 sm:py-2 px-2.5 sm:px-4 text-xs sm:text-sm text-slate-600 hover:text-slate-900 transition-colors shadow-2xs group justify-center sm:justify-between w-auto sm:w-60 md:w-80 shrink-0"
+            aria-label="Search jobs and exams"
           >
-            <span className="flex items-center gap-2 truncate">
-              <Search className="w-4 h-4 text-blue-600 shrink-0" />
-              <span className="truncate">भर्ती, एडमिट कार्ड खोजें...</span>
+            <span className="flex items-center gap-1.5 truncate">
+              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />
+              <span className="hidden sm:inline truncate">भर्ती, एडमिट कार्ड खोजें...</span>
+              <span className="sm:hidden font-semibold text-slate-700">खोजें</span>
             </span>
             <kbd className="hidden md:inline-block text-[10px] font-semibold bg-white text-slate-500 px-1.5 py-0.5 rounded border border-slate-300">
               Ctrl+K
             </kbd>
           </button>
 
-          {/* Direct Telegram join CTA on mobile / tablet */}
+          {/* Direct Telegram join CTA on tablet / desktop */}
           <a
             href={settings.telegramLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+            className="hidden md:flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0"
           >
             <Send className="w-3.5 h-3.5 text-sky-600" />
-            <span>ज्वाइन टेलीग्राम</span>
+            <span className="hidden lg:inline">ज्वाइन टेलीग्राम</span>
+            <span className="lg:hidden">Telegram</span>
           </a>
         </div>
       </div>
@@ -200,52 +205,59 @@ export const Header: React.FC<Props> = ({
 
       {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-slate-200 p-4 shadow-xl space-y-3 animate-in fade-in">
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <a
-              href={settings.telegramLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 bg-sky-600 text-white p-2.5 rounded-lg font-bold"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Telegram ग्रुप</span>
-            </a>
-            <a
-              href={settings.whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 bg-emerald-600 text-white p-2.5 rounded-lg font-bold"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span>WhatsApp चैनल</span>
-            </a>
-          </div>
-
-          <div className="divide-y divide-slate-100 font-medium text-sm">
-            {navLinks.map((link) => (
-              <button
-                key={link.route}
-                onClick={() => handleNav(link.route)}
-                className="w-full text-left py-2.5 px-2 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-colors flex items-center justify-between"
+        <>
+          <div 
+            className="fixed inset-0 top-[52px] sm:top-[60px] bg-slate-950/50 backdrop-blur-2xs z-30 lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="relative z-40 lg:hidden bg-white border-b border-slate-200 p-4 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-2 max-h-[calc(100vh-65px)] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <a
+                href={settings.telegramLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white p-2.5 rounded-lg font-bold transition-colors"
               >
-                <span>{link.label}</span>
-                <span className="text-slate-300 text-xs">›</span>
-              </button>
-            ))}
-            <button
-              onClick={() => handleNav('admin')}
-              className="w-full text-left py-2.5 px-2 text-amber-700 font-bold flex items-center gap-2"
-            >
-              <Lock className="w-4 h-4" />
-              <span>{isAdminLoggedIn ? 'एडमिन डैशबोर्ड' : 'एडमिन लॉगिन'}</span>
-            </button>
-          </div>
+                <Send className="w-3.5 h-3.5" />
+                <span>Telegram ग्रुप</span>
+              </a>
+              <a
+                href={settings.whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-lg font-bold transition-colors"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>WhatsApp चैनल</span>
+              </a>
+            </div>
 
-          <div className="pt-2 border-t border-slate-100 text-center text-xs text-slate-600">
-            {dateString}
+            <div className="divide-y divide-slate-100 font-medium text-sm">
+              {navLinks.map((link) => (
+                <button
+                  key={link.route}
+                  onClick={() => handleNav(link.route)}
+                  className="w-full text-left py-2.5 px-2 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-colors flex items-center justify-between"
+                >
+                  <span>{link.label}</span>
+                  <span className="text-slate-300 text-xs">›</span>
+                </button>
+              ))}
+              <button
+                onClick={() => handleNav('admin')}
+                className="w-full text-left py-2.5 px-2 text-amber-700 font-bold flex items-center gap-2 hover:bg-amber-50 rounded-md transition-colors"
+              >
+                <Lock className="w-4 h-4" />
+                <span>{isAdminLoggedIn ? 'एडमिन डैशबोर्ड' : 'एडमिन लॉगिन'}</span>
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 text-center text-xs text-slate-500">
+              {dateString}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );

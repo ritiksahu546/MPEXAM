@@ -1,4 +1,13 @@
-import { Post, Category, AdSlotConfig, ImportantLink, SiteSettings, UserProfile } from '../types';
+import { 
+  Post, 
+  Category, 
+  Tag,
+  AdSlotConfig, 
+  ImportantLink, 
+  SiteSettings, 
+  UserProfile,
+  HomepageSectionsConfig 
+} from '../types';
 import { 
   INITIAL_POSTS, 
   INITIAL_CATEGORIES, 
@@ -8,7 +17,6 @@ import {
 } from '../data/initialData';
 import { 
   db, 
-  auth, 
   isFirebaseConfigured, 
   handleFirestoreError, 
   OperationType 
@@ -21,19 +29,44 @@ import {
   updateDoc, 
   deleteDoc,
   getDoc,
+  query,
+  where,
+  orderBy,
+  limit,
   increment
 } from 'firebase/firestore';
 
 const STORAGE_KEYS = {
-  POSTS: 'mp_exam_posts_v1',
-  CATEGORIES: 'mp_exam_categories_v1',
-  ADS: 'mp_exam_ads_v1',
-  LINKS: 'mp_exam_links_v1',
-  SETTINGS: 'mp_exam_settings_v1',
-  DEMO_USER: 'mp_exam_demo_admin_v1'
+  POSTS: 'mp_exam_posts_v2',
+  CATEGORIES: 'mp_exam_categories_v2',
+  TAGS: 'mp_exam_tags_v2',
+  ADS: 'mp_exam_ads_v2',
+  LINKS: 'mp_exam_links_v2',
+  SETTINGS: 'mp_exam_settings_v2',
+  HOMEPAGE: 'mp_exam_homepage_v2',
+  DEMO_USER: 'mp_exam_admin_session_v2'
 };
 
-// Initialize LocalStorage with rich sample data if not present
+export const INITIAL_HOMEPAGE_SECTIONS: HomepageSectionsConfig = {
+  featuredPosts: true,
+  latestPosts: true,
+  trendingPosts: true,
+  importantLinks: true,
+  announcementBar: true,
+  quickCategoryGrid: true
+};
+
+export const INITIAL_TAGS: Tag[] = [
+  { id: 'tag_1', name: 'MP Police 2026', slug: 'mp-police-2026', postCount: 5 },
+  { id: 'tag_2', name: 'MPPSC Pre', slug: 'mppsc-pre', postCount: 4 },
+  { id: 'tag_3', name: 'MPESB Vyapam', slug: 'mpesb-vyapam', postCount: 6 },
+  { id: 'tag_4', name: 'Sarkari Result', slug: 'sarkari-result', postCount: 8 },
+  { id: 'tag_5', name: 'Admit Card', slug: 'admit-card', postCount: 6 },
+  { id: 'tag_6', name: 'Patwari', slug: 'patwari', postCount: 3 },
+  { id: 'tag_7', name: 'Samvida Shikshak', slug: 'samvida-shikshak', postCount: 4 }
+];
+
+// Initialize LocalStorage with rich sample data if not present (Requirement #6: Never blank)
 function initializeLocalStorage() {
   if (typeof window === 'undefined') return;
   if (!localStorage.getItem(STORAGE_KEYS.POSTS)) {
@@ -41,6 +74,9 @@ function initializeLocalStorage() {
   }
   if (!localStorage.getItem(STORAGE_KEYS.CATEGORIES)) {
     localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(INITIAL_CATEGORIES));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.TAGS)) {
+    localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(INITIAL_TAGS));
   }
   if (!localStorage.getItem(STORAGE_KEYS.ADS)) {
     localStorage.setItem(STORAGE_KEYS.ADS, JSON.stringify(INITIAL_AD_SLOTS));
@@ -51,20 +87,35 @@ function initializeLocalStorage() {
   if (!localStorage.getItem(STORAGE_KEYS.SETTINGS)) {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(INITIAL_SITE_SETTINGS));
   }
+  if (!localStorage.getItem(STORAGE_KEYS.HOMEPAGE)) {
+    localStorage.setItem(STORAGE_KEYS.HOMEPAGE, JSON.stringify(INITIAL_HOMEPAGE_SECTIONS));
+  }
 }
 
 initializeLocalStorage();
 
-// Posts API
+// ==========================================
+// 1. POSTS API
+// ==========================================
+
 export async function getPosts(): Promise<Post[]> {
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'posts'));
       if (!snap.empty) {
-        return snap.docs.map(d => ({ ...d.data(), id: d.id } as Post));
+        const firestorePosts = snap.docs.map(d => ({ ...d.data(), id: d.id } as Post));
+        // Sort descending by publishedAt or createdAt
+        firestorePosts.sort((a, b) => {
+          const dateA = new Date(a.publishedAt || a.createdAt || 0).getTime();
+          const dateB = new Date(b.publishedAt || b.createdAt || 0).getTime();
+          return dateB - dateA;
+        });
+        // Cache to local storage
+        localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(firestorePosts));
+        return firestorePosts;
       }
     } catch (error) {
-      console.warn('Firestore fetch failed, reading from local storage cache:', error);
+      console.warn('Firestore posts fetch notice (using cache):', error);
     }
   }
 
@@ -72,9 +123,18 @@ export async function getPosts(): Promise<Post[]> {
   return stored ? JSON.parse(stored) : INITIAL_POSTS;
 }
 
+export async function getPublishedPosts(): Promise<Post[]> {
+  const posts = await getPosts();
+  return posts.filter(p => p.status === 'published');
+}
+
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   const posts = await getPosts();
-  const post = posts.find(p => p.slug === slug || p.id === slug);
+  const normalizedSlug = slug.toLowerCase().trim();
+  const post = posts.find(p => 
+    p.slug.toLowerCase().trim() === normalizedSlug || 
+    p.id === slug
+  );
   return post || null;
 }
 
@@ -82,10 +142,23 @@ export async function savePost(post: Post): Promise<Post> {
   const posts = await getPosts();
   const index = posts.findIndex(p => p.id === post.id);
   const now = new Date().toISOString();
+
+  // Unique clean slug generation if empty
+  let cleanSlug = post.slug?.trim() || '';
+  if (!cleanSlug) {
+    cleanSlug = (post.title || 'post')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') + '-' + Date.now().toString().slice(-4);
+  }
+
   const updatedPost: Post = {
     ...post,
+    slug: cleanSlug,
+    category: post.category || post.categoryName || 'General',
     updatedAt: now,
-    createdAt: post.createdAt || now
+    createdAt: post.createdAt || now,
+    publishedAt: post.status === 'published' ? (post.publishedAt || now) : undefined
   };
 
   if (index >= 0) {
@@ -98,9 +171,9 @@ export async function savePost(post: Post): Promise<Post> {
 
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'posts', post.id), updatedPost);
+      await setDoc(doc(db, 'posts', updatedPost.id), updatedPost);
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `posts/${post.id}`);
+      handleFirestoreError(error, OperationType.WRITE, `posts/${updatedPost.id}`);
     }
   }
 
@@ -121,35 +194,73 @@ export async function deletePost(postId: string): Promise<void> {
   }
 }
 
-export async function incrementPostViews(postId: string): Promise<void> {
+export async function togglePublishPost(postId: string, publish: boolean): Promise<Post | null> {
   const posts = await getPosts();
   const post = posts.find(p => p.id === postId);
-  if (post) {
-    post.viewCount = (post.viewCount || 0) + 1;
-    localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(posts));
+  if (!post) return null;
+
+  const now = new Date().toISOString();
+  post.status = publish ? 'published' : 'draft';
+  post.updatedAt = now;
+  if (publish && !post.publishedAt) {
+    post.publishedAt = now;
   }
 
+  return await savePost(post);
+}
+
+// Requirement #18: Scalable view counter with session throttling
+export async function incrementPostViews(postId: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const sessionKey = `viewed_${postId}`;
+  if (sessionStorage.getItem(sessionKey)) {
+    return; // Already counted this session
+  }
+  sessionStorage.setItem(sessionKey, '1');
+
+  // Update local
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
+    if (stored) {
+      const posts: Post[] = JSON.parse(stored);
+      const post = posts.find(p => p.id === postId || p.slug === postId);
+      if (post) {
+        post.viewCount = (post.viewCount || 0) + 1;
+        localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(posts));
+      }
+    }
+  } catch (e) {
+    console.warn('Local view counter error:', e);
+  }
+
+  // Increment Firestore
   if (isFirebaseConfigured && db) {
     try {
       await updateDoc(doc(db, 'posts', postId), {
         viewCount: increment(1)
       });
     } catch {
-      // Non-blocking view increment
+      // Non-blocking for analytics
     }
   }
 }
 
-// Categories API
+// ==========================================
+// 2. CATEGORIES API
+// ==========================================
+
 export async function getCategories(): Promise<Category[]> {
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'categories'));
       if (!snap.empty) {
-        return snap.docs.map(d => ({ ...d.data(), id: d.id } as Category));
+        const firestoreCats = snap.docs.map(d => ({ ...d.data(), id: d.id } as Category));
+        firestoreCats.sort((a, b) => (a.order || 0) - (b.order || 0));
+        localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(firestoreCats));
+        return firestoreCats;
       }
     } catch (error) {
-      console.warn('Categories Firestore read error, using cache:', error);
+      console.warn('Categories Firestore read notice:', error);
     }
   }
 
@@ -191,51 +302,139 @@ export async function deleteCategory(categoryId: string): Promise<void> {
   }
 }
 
-// Ads API
+// ==========================================
+// 3. TAGS API
+// ==========================================
+
+export async function getTags(): Promise<Tag[]> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const snap = await getDocs(collection(db, 'tags'));
+      if (!snap.empty) {
+        const firestoreTags = snap.docs.map(d => ({ ...d.data(), id: d.id } as Tag));
+        localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(firestoreTags));
+        return firestoreTags;
+      }
+    } catch (error) {
+      console.warn('Tags fetch notice:', error);
+    }
+  }
+
+  const stored = localStorage.getItem(STORAGE_KEYS.TAGS);
+  return stored ? JSON.parse(stored) : INITIAL_TAGS;
+}
+
+export async function saveTag(tag: Tag): Promise<Tag> {
+  const tags = await getTags();
+  const idx = tags.findIndex(t => t.id === tag.id);
+  if (idx >= 0) {
+    tags[idx] = tag;
+  } else {
+    tags.push(tag);
+  }
+  localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(tags));
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, 'tags', tag.id), tag);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `tags/${tag.id}`);
+    }
+  }
+  return tag;
+}
+
+export async function deleteTag(tagId: string): Promise<void> {
+  const tags = await getTags();
+  const filtered = tags.filter(t => t.id !== tagId);
+  localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(filtered));
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await deleteDoc(doc(db, 'tags', tagId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `tags/${tagId}`);
+    }
+  }
+}
+
+// ==========================================
+// 4. ADVERTISEMENTS API
+// ==========================================
+
 export async function getAdSlots(): Promise<AdSlotConfig[]> {
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'ads'));
       if (!snap.empty) {
-        return snap.docs.map(d => ({ ...d.data(), id: d.id } as AdSlotConfig));
+        const firestoreAds = snap.docs.map(d => ({ ...d.data(), id: d.id } as AdSlotConfig));
+        localStorage.setItem(STORAGE_KEYS.ADS, JSON.stringify(firestoreAds));
+        return firestoreAds;
       }
     } catch (error) {
-      console.warn('Ad slots read fallback to local storage:', error);
+      console.warn('Ad slots read notice:', error);
     }
   }
   const stored = localStorage.getItem(STORAGE_KEYS.ADS);
   return stored ? JSON.parse(stored) : INITIAL_AD_SLOTS;
 }
 
-export async function updateAdSlot(slot: AdSlotConfig): Promise<void> {
+export async function saveAdSlot(slot: AdSlotConfig): Promise<AdSlotConfig> {
   const ads = await getAdSlots();
-  const idx = ads.findIndex(a => a.slotKey === slot.slotKey);
+  const slotKey = slot.slotKey || slot.slot || slot.id;
+  const normalizedSlot = { ...slot, id: slot.id || slotKey, slotKey };
+
+  const idx = ads.findIndex(a => (a.slotKey === slotKey || a.id === normalizedSlot.id));
   if (idx >= 0) {
-    ads[idx] = slot;
+    ads[idx] = normalizedSlot;
   } else {
-    ads.push(slot);
+    ads.push(normalizedSlot);
   }
   localStorage.setItem(STORAGE_KEYS.ADS, JSON.stringify(ads));
 
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'ads', slot.slotKey), slot);
+      await setDoc(doc(db, 'ads', normalizedSlot.id), normalizedSlot);
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `ads/${slot.slotKey}`);
+      handleFirestoreError(error, OperationType.WRITE, `ads/${normalizedSlot.id}`);
+    }
+  }
+  return normalizedSlot;
+}
+
+export async function updateAdSlot(slot: AdSlotConfig): Promise<void> {
+  await saveAdSlot(slot);
+}
+
+export async function deleteAdSlot(adId: string): Promise<void> {
+  const ads = await getAdSlots();
+  const filtered = ads.filter(a => a.id !== adId && a.slotKey !== adId);
+  localStorage.setItem(STORAGE_KEYS.ADS, JSON.stringify(filtered));
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await deleteDoc(doc(db, 'ads', adId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `ads/${adId}`);
     }
   }
 }
 
-// Important Links API
+// ==========================================
+// 5. IMPORTANT LINKS API
+// ==========================================
+
 export async function getImportantLinks(): Promise<ImportantLink[]> {
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'links'));
       if (!snap.empty) {
-        return snap.docs.map(d => ({ ...d.data(), id: d.id } as ImportantLink));
+        const firestoreLinks = snap.docs.map(d => ({ ...d.data(), id: d.id } as ImportantLink));
+        localStorage.setItem(STORAGE_KEYS.LINKS, JSON.stringify(firestoreLinks));
+        return firestoreLinks;
       }
     } catch (error) {
-      console.warn('Links read fallback to local storage:', error);
+      console.warn('Links read notice:', error);
     }
   }
   const stored = localStorage.getItem(STORAGE_KEYS.LINKS);
@@ -276,16 +475,61 @@ export async function deleteImportantLink(linkId: string): Promise<void> {
   }
 }
 
-// Settings API
+// ==========================================
+// 6. HOMEPAGE SECTIONS API
+// ==========================================
+
+export async function getHomepageSections(): Promise<HomepageSectionsConfig> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const snap = await getDoc(doc(db, 'homepageSections', 'config'));
+      if (snap.exists()) {
+        const data = snap.data() as HomepageSectionsConfig;
+        localStorage.setItem(STORAGE_KEYS.HOMEPAGE, JSON.stringify(data));
+        return data;
+      }
+    } catch (error) {
+      console.warn('Homepage sections read notice:', error);
+    }
+  }
+
+  const stored = localStorage.getItem(STORAGE_KEYS.HOMEPAGE);
+  return stored ? JSON.parse(stored) : INITIAL_HOMEPAGE_SECTIONS;
+}
+
+export async function updateHomepageSections(config: HomepageSectionsConfig): Promise<HomepageSectionsConfig> {
+  localStorage.setItem(STORAGE_KEYS.HOMEPAGE, JSON.stringify(config));
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, 'homepageSections', 'config'), config);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'homepageSections/config');
+    }
+  }
+  return config;
+}
+
+export const saveHomepageSections = updateHomepageSections;
+
+// ==========================================
+// 7. SITE SETTINGS API
+// ==========================================
+
 export async function getSettings(): Promise<SiteSettings> {
   if (isFirebaseConfigured && db) {
     try {
-      const snap = await getDoc(doc(db, 'settings', 'general'));
+      // Check siteSettings/general then settings/general
+      let snap = await getDoc(doc(db, 'siteSettings', 'general'));
+      if (!snap.exists()) {
+        snap = await getDoc(doc(db, 'settings', 'general'));
+      }
       if (snap.exists()) {
-        return snap.data() as SiteSettings;
+        const data = snap.data() as SiteSettings;
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(data));
+        return data;
       }
     } catch (error) {
-      console.warn('Settings read fallback to local:', error);
+      console.warn('Settings read notice:', error);
     }
   }
   const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -296,15 +540,19 @@ export async function updateSettings(settings: SiteSettings): Promise<SiteSettin
   localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   if (isFirebaseConfigured && db) {
     try {
+      await setDoc(doc(db, 'siteSettings', 'general'), settings);
       await setDoc(doc(db, 'settings', 'general'), settings);
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'settings/general');
+      handleFirestoreError(error, OperationType.WRITE, 'siteSettings/general');
     }
   }
   return settings;
 }
 
-// Demo Admin Authentication Simulation
+// ==========================================
+// 8. ADMIN SESSION & SEEDING UTILITIES
+// ==========================================
+
 export function getDemoAdminUser(): UserProfile | null {
   const stored = localStorage.getItem(STORAGE_KEYS.DEMO_USER);
   return stored ? JSON.parse(stored) : null;
@@ -318,11 +566,54 @@ export function setDemoAdminUser(user: UserProfile | null) {
   }
 }
 
-// Reset sample data utility
+/**
+ * Migration helper: Seeds the initial sample data into Firestore if Firestore is empty.
+ * (Requirement #6: Migration-friendly architecture)
+ */
+export async function seedInitialDataToFirestore(): Promise<{ postsCount: number; categoriesCount: number }> {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured. Please check environment credentials.');
+  }
+
+  // Seed Categories
+  for (const cat of INITIAL_CATEGORIES) {
+    await setDoc(doc(db, 'categories', cat.id), cat);
+  }
+
+  // Seed Posts
+  for (const post of INITIAL_POSTS) {
+    await setDoc(doc(db, 'posts', post.id), post);
+  }
+
+  // Seed Ads
+  for (const ad of INITIAL_AD_SLOTS) {
+    await setDoc(doc(db, 'ads', ad.id || ad.slotKey), ad);
+  }
+
+  // Seed Links
+  for (const link of INITIAL_IMPORTANT_LINKS) {
+    await setDoc(doc(db, 'links', link.id), link);
+  }
+
+  // Seed Settings
+  await setDoc(doc(db, 'siteSettings', 'general'), INITIAL_SITE_SETTINGS);
+  await setDoc(doc(db, 'settings', 'general'), INITIAL_SITE_SETTINGS);
+
+  // Seed Homepage Sections
+  await setDoc(doc(db, 'homepageSections', 'config'), INITIAL_HOMEPAGE_SECTIONS);
+
+  return {
+    postsCount: INITIAL_POSTS.length,
+    categoriesCount: INITIAL_CATEGORIES.length
+  };
+}
+
 export function resetToSampleData(): void {
   localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(INITIAL_POSTS));
   localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(INITIAL_CATEGORIES));
+  localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(INITIAL_TAGS));
   localStorage.setItem(STORAGE_KEYS.ADS, JSON.stringify(INITIAL_AD_SLOTS));
   localStorage.setItem(STORAGE_KEYS.LINKS, JSON.stringify(INITIAL_IMPORTANT_LINKS));
   localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(INITIAL_SITE_SETTINGS));
+  localStorage.setItem(STORAGE_KEYS.HOMEPAGE, JSON.stringify(INITIAL_HOMEPAGE_SECTIONS));
 }

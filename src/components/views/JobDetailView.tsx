@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { Post, Category, AdSlotConfig } from '../../types';
 import { Breadcrumbs } from '../common/Breadcrumbs';
 import { Disclaimer } from '../common/Disclaimer';
@@ -190,6 +191,34 @@ export const JobDetailView: React.FC<Props> = ({
           </div>
         </div>
 
+        {/* Prominent Quick Action CTAs */}
+        {(post.applyLink || post.notificationPdf) && (
+          <div className="flex flex-wrap items-center gap-3 p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl">
+            {post.applyLink && (
+              <a
+                href={post.applyLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-[160px] py-2.5 px-4 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-colors"
+              >
+                <span>ऑनलाइन आवेदन करें (Apply Now)</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+            {post.notificationPdf && (
+              <a
+                href={post.notificationPdf}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-[160px] py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Notification (पीडीएफ)</span>
+              </a>
+            )}
+          </div>
+        )}
+
         {/* Table 1: Important Dates (महत्वपूर्ण तिथियां) */}
         <section aria-labelledby="dates-heading" className="space-y-2">
           <h3 id="dates-heading" className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -332,9 +361,16 @@ export const JobDetailView: React.FC<Props> = ({
               <FileText className="w-5 h-5 text-slate-700" />
               <span>विस्तृत जानकारी (Full Overview)</span>
             </h3>
-            <div className="text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line">
-              {post.content}
-            </div>
+            {post.content.includes('<') ? (
+              <div 
+                className="text-xs sm:text-sm text-slate-800 leading-relaxed overflow-x-auto [&_table]:w-full [&_table]:border-collapse [&_table]:border [&_table]:border-slate-300 [&_th]:bg-slate-100 [&_th]:p-2.5 [&_th]:border [&_th]:border-slate-300 [&_td]:p-2.5 [&_td]:border [&_td]:border-slate-300 [&_h2]:text-base [&_h2]:font-bold [&_h2]:my-2 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1.5 [&_a]:text-blue-700 [&_a]:underline"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
+              />
+            ) : (
+              <div className="text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+                {post.content}
+              </div>
+            )}
           </section>
         )}
 

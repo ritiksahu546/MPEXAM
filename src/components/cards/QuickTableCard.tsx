@@ -46,16 +46,16 @@ export const QuickTableCard: React.FC<Props> = ({
 
   return (
     <div className={`bg-white rounded-xl border ${theme.border} shadow-xs overflow-hidden flex flex-col h-full`}>
-      <div className={`${theme.header} p-3 sm:p-3.5 flex items-center justify-between`}>
-        <div>
-          <h2 className="font-bold text-base sm:text-lg flex items-center gap-1.5 leading-tight">
-            <span>{title}</span>
+      <div className={`${theme.header} p-3 sm:p-3.5 flex items-center justify-between gap-2 min-w-0`}>
+        <div className="min-w-0">
+          <h2 className="font-bold text-base sm:text-lg flex items-center gap-1.5 leading-tight truncate">
+            <span className="truncate">{title}</span>
           </h2>
-          <span className="text-[11px] opacity-90 tracking-wide uppercase font-medium">{titleEn}</span>
+          <span className="text-[11px] opacity-90 tracking-wide uppercase font-medium block truncate">{titleEn}</span>
         </div>
         <button
           onClick={onViewAll}
-          className="text-[11px] font-bold bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-md transition-colors"
+          className="text-[11px] font-bold bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-md transition-colors shrink-0"
         >
           सभी देखें
         </button>
@@ -78,8 +78,8 @@ export const QuickTableCard: React.FC<Props> = ({
                 <p className="text-xs sm:text-sm font-semibold text-slate-800 group-hover:text-blue-700 transition-colors line-clamp-2 leading-snug">
                   {post.titleHindi || post.title}
                 </p>
-                <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-600">
-                  <span className="truncate">{post.organization}</span>
+                <div className="flex items-center justify-between gap-2 mt-1 text-[11px] text-slate-600 min-w-0">
+                  <span className="truncate flex-1">{post.organization}</span>
                   {post.applicationLastDate && (
                     <span className="text-red-600 font-medium shrink-0">
                       अंतिम: {post.applicationLastDate}

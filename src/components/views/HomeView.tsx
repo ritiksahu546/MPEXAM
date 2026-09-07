@@ -63,7 +63,7 @@ export const HomeView: React.FC<Props> = ({
 
       {/* Hero Quick Navigation Chips */}
       <section aria-label="Category Quick Links" className="max-w-7xl mx-auto px-3 sm:px-4">
-        <div className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-xs">
+        <div className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-xs overflow-hidden">
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />

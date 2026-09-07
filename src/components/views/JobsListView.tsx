@@ -26,7 +26,7 @@ interface Props {
   onSelectPost: (slug: string) => void;
 }
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 10;
 
 export const JobsListView: React.FC<Props> = ({
   posts,
@@ -46,12 +46,24 @@ export const JobsListView: React.FC<Props> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState<boolean>(false);
 
+  const activeCategoryObj = useMemo(() => {
+    if (selectedCategory === 'all') return null;
+    return categories.find(c => c.id === selectedCategory || c.slug === selectedCategory);
+  }, [categories, selectedCategory]);
+
   // Filter posts
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
       // Category filter
-      if (selectedCategory !== 'all' && post.categoryId !== selectedCategory) {
-        return false;
+      if (selectedCategory !== 'all') {
+        const catMatches = 
+          post.categoryId === selectedCategory ||
+          (activeCategoryObj && (
+            post.categoryId === activeCategoryObj.id ||
+            post.category === activeCategoryObj.nameHindi ||
+            post.category === activeCategoryObj.nameEnglish
+          ));
+        if (!catMatches) return false;
       }
       // Type filter
       if (selectedType !== 'all' && post.postType !== selectedType) {
@@ -113,9 +125,14 @@ export const JobsListView: React.FC<Props> = ({
       
       {/* Breadcrumbs */}
       <Breadcrumbs
-        items={[
-          { label: 'सरकारी नौकरियां' }
-        ]}
+        items={
+          activeCategoryObj
+            ? [
+                { label: 'श्रेणियां', route: 'categories' },
+                { label: activeCategoryObj.nameHindi }
+              ]
+            : [{ label: 'सरकारी नौकरियां' }]
+        }
         onNavigate={onNavigate}
       />
 
@@ -123,17 +140,17 @@ export const JobsListView: React.FC<Props> = ({
       <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
-            {pageTitle}
+            {activeCategoryObj ? `${activeCategoryObj.nameHindi} (${activeCategoryObj.nameEnglish || 'भर्ती'})` : pageTitle}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            मध्य प्रदेश के समस्त सरकारी विभागों की नवीनतम भर्तियों, एडमिट कार्ड व परीक्षा परिणामों की सूची
+            {activeCategoryObj?.description || 'मध्य प्रदेश के समस्त सरकारी विभागों की नवीनतम भर्तियों, एडमिट कार्ड व परीक्षा परिणामों की सूची'}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsFilterDrawerOpen(!isFilterDrawerOpen)}
-            className="md:hidden flex items-center gap-1.5 bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow-xs"
+            className="lg:hidden flex items-center gap-1.5 bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow-xs"
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>फ़िल्टर ({filteredPosts.length})</span>
