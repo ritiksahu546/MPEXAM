@@ -92,7 +92,7 @@ export const PostFormModal: React.FC<Props> = ({
     };
   });
 
-  const [activeSubTab, setActiveSubTab] = useState<'basic' | 'dates_fees' | 'job_details' | 'content' | 'links_media' | 'seo'>('basic');
+  const [activeSubTab, setActiveSubTab] = useState<'basic' | 'dates_fees' | 'job_details' | 'content' | 'links_media' | 'seo' | 'faqs'>('basic');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
@@ -318,6 +318,15 @@ export const PostFormModal: React.FC<Props> = ({
             }`}
           >
             6. SEO सेटिंग्स
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('faqs')}
+            className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
+              activeSubTab === 'faqs' ? 'bg-white text-blue-700 font-bold shadow-2xs' : 'text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            7. अक्सर पूछे जाने वाले प्रश्न (FAQs)
           </button>
         </div>
 
@@ -613,6 +622,45 @@ export const PostFormModal: React.FC<Props> = ({
 
               <div>
                 <label className="block font-bold text-slate-800 mb-1">
+                  परीक्षा पैटर्न (Exam Pattern & Marking Scheme)
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.examPattern || ''}
+                  onChange={e => setFormData({ ...formData, examPattern: e.target.value })}
+                  placeholder="कुल 100 बहुविकल्पीय प्रश्न (MCQs) • 100 अंक • समयावधि 2 घंटे..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">
+                  विस्तृत पाठ्यक्रम (Syllabus Summary)
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.syllabus || ''}
+                  onChange={e => setFormData({ ...formData, syllabus: e.target.value })}
+                  placeholder="सामान्य ज्ञान, सामान्य अभिरुचि, बौद्धिक क्षमता, गणित, विज्ञान..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">
+                  आवश्यक दस्तावेज (Required Documents)
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.documentsRequired || ''}
+                  onChange={e => setFormData({ ...formData, documentsRequired: e.target.value })}
+                  placeholder="10वीं/12वीं अंकसूची, MP मूल निवासी प्रमाण पत्र, जाति प्रमाण पत्र, आधार कार्ड..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">
                   आवेदन कैसे करें (How to Apply)
                 </label>
                 <textarea
@@ -782,6 +830,45 @@ export const PostFormModal: React.FC<Props> = ({
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                 </div>
+
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">
+                    प्रवेश पत्र डाउनलोड लिंक (Admit Card URL)
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.admitCardLink || ''}
+                    onChange={e => setFormData({ ...formData, admitCardLink: e.target.value })}
+                    placeholder="https://esb.mp.gov.in/admit_card"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">
+                    परीक्षा परिणाम लिंक (Result URL)
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.resultLink || ''}
+                    onChange={e => setFormData({ ...formData, resultLink: e.target.value })}
+                    placeholder="https://esb.mp.gov.in/results"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-800 mb-1">
+                    उत्तर कुंजी लिंक (Answer Key URL)
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.answerKeyLink || ''}
+                    onChange={e => setFormData({ ...formData, answerKeyLink: e.target.value })}
+                    placeholder="https://esb.mp.gov.in/model_answer_keys"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
               </div>
 
               {/* Tags Section */}
@@ -878,6 +965,19 @@ export const PostFormModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block font-bold text-slate-800 mb-1">
+                    गौण कीवर्ड्स (Secondary Keywords)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.secondaryKeywords || ''}
+                    onChange={e => setFormData({ ...formData, secondaryKeywords: e.target.value })}
+                    placeholder="MPESB Bharti 2026, Vyapam Admit Card, MP Police Result"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-800 mb-1">
                     कैनोनिकल URL (Canonical URL)
                   </label>
                   <input
@@ -888,6 +988,106 @@ export const PostFormModal: React.FC<Props> = ({
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: FAQ BUILDER */}
+          {activeSubTab === 'faqs' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                <div>
+                  <h4 className="font-bold text-blue-900 text-sm">
+                    अक्सर पूछे जाने वाले प्रश्न (FAQ Builder for Rich Snippets)
+                  </h4>
+                  <p className="text-[11px] text-blue-700">
+                    Google खोज परिणामों में FAQ रिच परिणाम प्रदर्शित करने हेतु प्रश्न और उत्तर जोड़ें।
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    faqs: [...(formData.faqs || []), { question: '', answer: '' }]
+                  })}
+                  className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold shrink-0 shadow-2xs"
+                >
+                  + नया प्रश्न जोड़ें
+                </button>
+              </div>
+
+              {/* Quick Template Pills */}
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span className="text-slate-500 font-medium">त्वरित प्रश्न टेम्पलेट:</span>
+                {[
+                  'आवेदन करने की अंतिम तिथि क्या है?',
+                  'शैक्षणिक योग्यता एवं पात्रता क्या है?',
+                  'कुल कितने रिक्त पदों पर भर्ती होगी?',
+                  'चयन प्रक्रिया में क्या-क्या चरण होंगे?',
+                  'क्या अन्य राज्यों के अभ्यर्थी आवेदन कर सकते हैं?'
+                ].map(q => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        faqs: [...(formData.faqs || []), { question: q, answer: '' }]
+                      });
+                    }}
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-blue-100 hover:text-blue-800 text-slate-700 rounded border border-slate-200 transition-colors"
+                  >
+                    + {q}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-3">
+                {(!formData.faqs || formData.faqs.length === 0) ? (
+                  <div className="text-center py-8 border border-dashed border-slate-300 rounded-xl text-slate-500">
+                    कोई FAQ नहीं जोड़ा गया। ऊपर दिए गए बटन से नया प्रश्न जोड़ें।
+                  </div>
+                ) : (
+                  formData.faqs.map((faq, index) => (
+                    <div key={index} className="p-3 border border-slate-200 rounded-xl bg-slate-50 space-y-2 relative">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700">प्रश्न #{index + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = (formData.faqs || []).filter((_, i) => i !== index);
+                            setFormData({ ...formData, faqs: updated });
+                          }}
+                          className="text-red-600 hover:text-red-800 text-xs font-medium"
+                        >
+                          हटाएं ✕
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={faq.question}
+                        onChange={e => {
+                          const updated = [...(formData.faqs || [])];
+                          updated[index] = { ...updated[index], question: e.target.value };
+                          setFormData({ ...formData, faqs: updated });
+                        }}
+                        placeholder="प्रश्न लिखें (e.g. परीक्षा कब आयोजित होगी?)"
+                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-medium"
+                      />
+                      <textarea
+                        rows={2}
+                        value={faq.answer}
+                        onChange={e => {
+                          const updated = [...(formData.faqs || [])];
+                          updated[index] = { ...updated[index], answer: e.target.value };
+                          setFormData({ ...formData, faqs: updated });
+                        }}
+                        placeholder="उत्तर लिखें..."
+                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white"
+                      />
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

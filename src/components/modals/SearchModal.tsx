@@ -18,6 +18,7 @@ export const SearchModal: React.FC<Props> = ({
   onSelectPost
 }) => {
   const [query, setQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<'all' | 'job' | 'admit_card' | 'result' | 'answer_key'>('all');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -32,6 +33,7 @@ export const SearchModal: React.FC<Props> = ({
       }
     } else {
       setQuery('');
+      setSelectedType('all');
     }
   }, [isOpen]);
 
@@ -57,7 +59,12 @@ export const SearchModal: React.FC<Props> = ({
   };
 
   const filteredPosts = query.trim() === '' ? [] : posts.filter(post => {
+    if (selectedType !== 'all' && post.postType !== selectedType) {
+      return false;
+    }
+
     const q = query.toLowerCase();
+    const tagsMatch = post.tags && post.tags.some(t => t.toLowerCase().includes(q));
     return (
       post.title.toLowerCase().includes(q) ||
       post.titleHindi.toLowerCase().includes(q) ||
@@ -65,7 +72,8 @@ export const SearchModal: React.FC<Props> = ({
       post.categoryName.toLowerCase().includes(q) ||
       (post.focusKeyword && post.focusKeyword.toLowerCase().includes(q)) ||
       (post.qualification && post.qualification.toLowerCase().includes(q)) ||
-      (post.secondaryKeywords && post.secondaryKeywords.toLowerCase().includes(q))
+      (post.secondaryKeywords && post.secondaryKeywords.toLowerCase().includes(q)) ||
+      Boolean(tagsMatch)
     );
   });
 
@@ -112,6 +120,29 @@ export const SearchModal: React.FC<Props> = ({
           >
             बंद करें (Esc)
           </button>
+        </div>
+
+        {/* Filter Type Pills */}
+        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-slate-50/70 overflow-x-auto text-xs">
+          {[
+            { id: 'all', label: 'सभी (All)' },
+            { id: 'job', label: 'नौकरियां (Jobs)' },
+            { id: 'admit_card', label: 'एडमिट कार्ड (Admit Card)' },
+            { id: 'result', label: 'परिणाम (Result)' },
+            { id: 'answer_key', label: 'आंसर की (Answer Key)' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSelectedType(tab.id as any)}
+              className={`px-2.5 py-1 rounded-full font-semibold transition-colors whitespace-nowrap cursor-pointer ${
+                selectedType === tab.id
+                  ? 'bg-blue-700 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:bg-slate-200/80 border border-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Search Body */}

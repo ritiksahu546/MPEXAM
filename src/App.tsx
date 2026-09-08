@@ -11,6 +11,7 @@ import {
 } from './types';
 import { 
   getPosts, 
+  getAllPostsForAdmin,
   getCategories, 
   getTags,
   getAdSlots, 
@@ -29,13 +30,11 @@ import {
   deleteImportantLink,
   updateSettings,
   saveHomepageSections,
-  getDemoAdminUser,
-  setDemoAdminUser,
   resetToSampleData,
   seedInitialDataToFirestore,
   INITIAL_HOMEPAGE_SECTIONS
 } from './services/storage';
-import { onAuthStateChanged, auth, logOut, testFirebaseConnection } from './services/firebase';
+import { onAuthStateChanged, auth, logOut, testFirebaseConnection, verifyAdminAuthorization } from './services/firebase';
 
 import { Header } from './components/common/Header';
 import { AnnouncementBar } from './components/common/AnnouncementBar';
@@ -48,23 +47,62 @@ import { StaticPageView } from './components/views/StaticPageView';
 import { SitemapView } from './components/views/SitemapView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminLoginView } from './components/admin/AdminLoginView';
-import { INITIAL_POSTS, INITIAL_CATEGORIES, INITIAL_AD_SLOTS, INITIAL_IMPORTANT_LINKS, INITIAL_SITE_SETTINGS } from './data/initialData';
+import { ResetPasswordView } from './components/admin/ResetPasswordView';
+import { LoadingSkeleton } from './components/common/LoadingSkeleton';
+import { DataErrorState } from './components/common/DataErrorState';
+import { INITIAL_SITE_SETTINGS } from './data/initialData';
+
+/**
+ * Extracts Firebase password reset action code (oobCode) from either URL search parameters or hash.
+ */
+function extractPasswordResetCode(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  // 1. Search params (?mode=resetPassword&oobCode=XYZ or ?oobCode=XYZ)
+  if (window.location.search) {
+    const searchParams = new URLSearchParams(window.location.search);
+    const mode = searchParams.get('mode');
+    const oobCode = searchParams.get('oobCode');
+    if (oobCode && (mode === 'resetPassword' || !mode)) {
+      return oobCode;
+    }
+  }
+
+  // 2. Hash search params (#reset-password?oobCode=XYZ or #...?mode=resetPassword&oobCode=XYZ)
+  if (window.location.hash) {
+    const qIndex = window.location.hash.indexOf('?');
+    if (qIndex !== -1) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(qIndex));
+      const mode = hashParams.get('mode');
+      const oobCode = hashParams.get('oobCode');
+      if (oobCode && (mode === 'resetPassword' || !mode)) {
+        return oobCode;
+      }
+    }
+  }
+
+  return null;
+}
 
 export default function App() {
-  const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [adSlots, setAdSlots] = useState<AdSlotConfig[]>(INITIAL_AD_SLOTS);
-  const [importantLinks, setImportantLinks] = useState<ImportantLink[]>(INITIAL_IMPORTANT_LINKS);
+  const [adSlots, setAdSlots] = useState<AdSlotConfig[]>([]);
+  const [importantLinks, setImportantLinks] = useState<ImportantLink[]>([]);
   const [settings, setSettings] = useState<SiteSettings>(INITIAL_SITE_SETTINGS);
   const [homepageSections, setHomepageSections] = useState<HomepageSectionsConfig>(INITIAL_HOMEPAGE_SECTIONS);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(getDemoAdminUser());
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [currentRoute, setCurrentRoute] = useState<string>('home');
+  const [resetCode, setResetCode] = useState<string>('');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [dataError, setDataError] = useState<string | null>(null);
 
   // Load all CMS data
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (asAdmin = false) => {
+    setIsLoading(true);
+    setDataError(null);
     try {
       const [
         fetchedPosts, 
@@ -75,7 +113,7 @@ export default function App() {
         fetchedSettings,
         fetchedSections
       ] = await Promise.all([
-        getPosts(),
+        asAdmin ? getAllPostsForAdmin() : getPosts(),
         getCategories(),
         getTags(),
         getAdSlots(),
@@ -92,6 +130,7 @@ export default function App() {
       setHomepageSections(fetchedSections);
     } catch (err) {
       console.error('Error loading data:', err);
+      setDataError('डेटा लोड करने में समस्या आई। कृपया पृष्ठ को रीफ्रेश करें।');
     } finally {
       setIsLoading(false);
     }
@@ -103,31 +142,65 @@ export default function App() {
 
     // Listen to Firebase Auth state if available
     if (auth) {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
-          setCurrentUser({
-            uid: user.uid,
-            email: user.email || '',
-            displayName: user.displayName || 'Admin',
-            role: 'admin',
-            isAdmin: true
-          });
+          try {
+            const isAuthorized = await verifyAdminAuthorization(user);
+            if (isAuthorized) {
+              const adminUser: UserProfile = {
+                uid: user.uid,
+                email: user.email || '',
+                displayName: user.displayName || 'Authorized Admin',
+                role: 'admin',
+                isAdmin: true
+              };
+              setCurrentUser(adminUser);
+              const adminPosts = await getAllPostsForAdmin();
+              setPosts(adminPosts);
+            } else {
+              console.warn(`User ${user.email} is not authorized in admins collection. Signing out.`);
+              await logOut();
+              setCurrentUser(null);
+              const publicPosts = await getPosts();
+              setPosts(publicPosts);
+            }
+          } catch (authErr) {
+            console.error('Error verifying admin authorization:', authErr);
+            await logOut();
+            setCurrentUser(null);
+          }
+        } else {
+          setCurrentUser(null);
         }
       });
       return () => unsubscribe();
     }
   }, [refreshData]);
 
-  // URL Hash Sync for routing
+  // URL & Hash Sync for routing (supports Firebase Auth Password Reset action codes)
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '') || 'home';
-      setCurrentRoute(hash);
+    const handleRouteChange = () => {
+      // 1. First inspect if the incoming URL is a Firebase Auth action code / password reset
+      const oobCode = extractPasswordResetCode();
+      if (oobCode) {
+        setResetCode(oobCode);
+        setCurrentRoute('reset-password');
+        return;
+      }
+
+      // 2. Otherwise handle standard hash routing
+      const rawHash = window.location.hash.replace('#', '') || 'home';
+      const cleanHash = rawHash.split('?')[0];
+      setCurrentRoute(cleanHash || 'home');
     };
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    handleRouteChange();
+    window.addEventListener('hashchange', handleRouteChange);
+    window.addEventListener('popstate', handleRouteChange);
+    return () => {
+      window.removeEventListener('hashchange', handleRouteChange);
+      window.removeEventListener('popstate', handleRouteChange);
+    };
   }, []);
 
   // Keyboard shortcut Ctrl+K / Cmd+K for search
@@ -248,28 +321,117 @@ export default function App() {
 
   const handleResetData = () => {
     resetToSampleData();
-    refreshData();
+    refreshData(currentUser?.isAdmin);
   };
 
   const handleSeedData = async () => {
     await seedInitialDataToFirestore();
-    await refreshData();
+    await refreshData(currentUser?.isAdmin);
   };
 
-  const handleLogin = (user: UserProfile) => {
-    setDemoAdminUser(user);
+  const handleLogin = async (user: UserProfile) => {
     setCurrentUser(user);
+    try {
+      const adminPosts = await getAllPostsForAdmin();
+      setPosts(adminPosts);
+    } catch (err) {
+      console.error('Error fetching admin posts on login:', err);
+    }
   };
 
   const handleLogout = async () => {
-    setDemoAdminUser(null);
     setCurrentUser(null);
     await logOut();
+    try {
+      const publicPosts = await getPosts();
+      setPosts(publicPosts);
+    } catch (err) {
+      console.error('Error fetching public posts on logout:', err);
+    }
   };
 
   // Route Dispatcher
   const renderCurrentView = () => {
-    // 1. Home View
+    // 1. Password Reset View (Firebase Auth Action Code)
+    if (currentRoute === 'reset-password') {
+      return (
+        <ResetPasswordView
+          oobCode={resetCode}
+          onSuccess={() => {
+            setResetCode('');
+            navigate('admin');
+          }}
+          onCancel={() => {
+            setResetCode('');
+            navigate('admin');
+          }}
+          onRequestNewLink={() => {
+            setResetCode('');
+            navigate('admin');
+          }}
+        />
+      );
+    }
+
+    // 2. Admin Panel / Admin Login
+    if (currentRoute === 'admin') {
+      if (!currentUser) {
+        return (
+          <AdminLoginView
+            settings={settings}
+            onSuccess={handleLogin}
+            onNavigateHome={() => navigate('home')}
+          />
+        );
+      }
+
+      return (
+        <AdminDashboard
+          posts={posts}
+          categories={categories}
+          tags={tags}
+          adSlots={adSlots}
+          importantLinks={importantLinks}
+          settings={settings}
+          homepageSections={homepageSections}
+          currentUser={currentUser}
+          onLogin={handleLogin}
+          onLogout={handleLogout}
+          onSavePost={handleSavePost}
+          onDeletePost={handleDeletePost}
+          onSaveCategory={handleSaveCategory}
+          onDeleteCategory={handleDeleteCategory}
+          onSaveTag={handleSaveTag}
+          onDeleteTag={handleDeleteTag}
+          onUpdateAdSlot={handleUpdateAdSlot}
+          onSaveImportantLink={handleSaveImportantLink}
+          onDeleteImportantLink={handleDeleteImportantLink}
+          onSaveSettings={handleSaveSettings}
+          onSaveHomepageSections={handleSaveHomepageSections}
+          onResetData={handleResetData}
+          onSeedData={handleSeedData}
+          onViewPost={handleSelectPost}
+          onNavigateHome={() => navigate('home')}
+        />
+      );
+    }
+
+    // 3. Loading State: Gate all public views while initial data is being fetched
+    if (isLoading) {
+      return <LoadingSkeleton />;
+    }
+
+    // 4. Error State: If data failed to load and no posts exist
+    if (dataError && posts.length === 0) {
+      return (
+        <DataErrorState
+          message={dataError}
+          onRetry={() => refreshData(Boolean(currentUser))}
+        />
+      );
+    }
+
+    // 5. Home View
     if (currentRoute === 'home' || currentRoute === '') {
       return (
         <HomeView
@@ -278,6 +440,7 @@ export default function App() {
           adSlots={adSlots}
           importantLinks={importantLinks}
           settings={settings}
+          homepageSections={homepageSections}
           onNavigate={navigate}
           onSelectPost={handleSelectPost}
         />
@@ -433,49 +596,6 @@ export default function App() {
       );
     }
 
-    // 11. Admin Panel / Admin Login (Requirement #2 & #3)
-    if (currentRoute === 'admin') {
-      if (!currentUser) {
-        return (
-          <AdminLoginView
-            settings={settings}
-            onSuccess={handleLogin}
-            onNavigateHome={() => navigate('home')}
-          />
-        );
-      }
-
-      return (
-        <AdminDashboard
-          posts={posts}
-          categories={categories}
-          tags={tags}
-          adSlots={adSlots}
-          importantLinks={importantLinks}
-          settings={settings}
-          homepageSections={homepageSections}
-          currentUser={currentUser}
-          onLogin={handleLogin}
-          onLogout={handleLogout}
-          onSavePost={handleSavePost}
-          onDeletePost={handleDeletePost}
-          onSaveCategory={handleSaveCategory}
-          onDeleteCategory={handleDeleteCategory}
-          onSaveTag={handleSaveTag}
-          onDeleteTag={handleDeleteTag}
-          onUpdateAdSlot={handleUpdateAdSlot}
-          onSaveImportantLink={handleSaveImportantLink}
-          onDeleteImportantLink={handleDeleteImportantLink}
-          onSaveSettings={handleSaveSettings}
-          onSaveHomepageSections={handleSaveHomepageSections}
-          onResetData={handleResetData}
-          onSeedData={handleSeedData}
-          onViewPost={handleSelectPost}
-          onNavigateHome={() => navigate('home')}
-        />
-      );
-    }
-
     // Default Fallback
     return (
       <HomeView
@@ -484,6 +604,7 @@ export default function App() {
         adSlots={adSlots}
         importantLinks={importantLinks}
         settings={settings}
+        homepageSections={homepageSections}
         onNavigate={navigate}
         onSelectPost={handleSelectPost}
       />
@@ -494,6 +615,15 @@ export default function App() {
   if (currentRoute === 'admin' && currentUser) {
     return (
       <div className="min-h-screen bg-slate-100 font-sans antialiased text-slate-900">
+        {renderCurrentView()}
+      </div>
+    );
+  }
+
+  // If viewing reset password, render full-screen secure experience
+  if (currentRoute === 'reset-password') {
+    return (
+      <div className="min-h-screen bg-slate-950 font-sans antialiased text-slate-100">
         {renderCurrentView()}
       </div>
     );

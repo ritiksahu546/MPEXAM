@@ -4,41 +4,68 @@ import { AdSlotConfig } from '../../types';
 interface Props {
   slot: AdSlotConfig | undefined;
   className?: string;
+  showAdminPlaceholder?: boolean;
 }
 
-export const AdSlot: React.FC<Props> = ({ slot, className = '' }) => {
-  if (!slot || !slot.enabled) {
+export const AdSlot: React.FC<Props> = ({ 
+  slot, 
+  className = '', 
+  showAdminPlaceholder = false 
+}) => {
+  // If no slot configured or explicitly disabled, do not render
+  if (!slot || (!slot.enabled && !slot.isActive)) {
     return null;
   }
 
-  // If custom script / AdSense code exists, inject it safely, otherwise show clean compliant placeholder
-  if (slot.adCode && slot.adCode.trim() !== '') {
+  // Check date range if specified
+  const now = new Date().toISOString().slice(0, 10);
+  if (slot.startDate && slot.startDate > now) {
+    return null;
+  }
+  if (slot.endDate && slot.endDate < now) {
+    return null;
+  }
+
+  const code = slot.adCode || slot.code || '';
+  const minHeight = slot.minHeight || (slot.format === '300x250' ? 250 : 90);
+
+  // If real ad code / banner HTML exists, render it cleanly with CLS prevention
+  if (code && code.trim() !== '') {
     return (
-      <div 
-        className={`w-full overflow-hidden my-3 flex justify-center items-center ${className}`}
-        style={{ minHeight: `${slot.minHeight}px` }}
-        dangerouslySetInnerHTML={{ __html: slot.adCode }}
-      />
+      <aside 
+        aria-label="प्रायोजित विज्ञापन"
+        className={`w-full overflow-hidden my-3 flex flex-col justify-center items-center ${className}`}
+        style={{ minHeight: `${minHeight}px` }}
+      >
+        <div className="text-[10px] text-slate-600 uppercase tracking-wider mb-1 font-semibold">
+          विज्ञापन • ADVERTISEMENT
+        </div>
+        <div 
+          className="w-full flex justify-center items-center"
+          dangerouslySetInnerHTML={{ __html: code }}
+        />
+      </aside>
     );
   }
 
-  return (
-    <aside 
-      aria-label={`Advertisement slot: ${slot.label}`}
-      className={`w-full my-3 px-3 py-3 border border-dashed border-slate-300 rounded-lg bg-slate-100/70 text-center flex flex-col items-center justify-center transition-all ${className}`}
-      style={{ minHeight: `${slot.minHeight}px` }}
-    >
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-slate-600 uppercase mb-1">
-        <span>विज्ञापन</span>
-        <span>•</span>
-        <span>ADVERTISEMENT</span>
-      </div>
-      <div className="text-xs text-slate-600 font-medium max-w-md">
-        <span>{slot.label}</span>
-      </div>
-      <div className="text-[10px] text-slate-600 mt-0.5">
-        Google AdSense / प्रायोजित विज्ञापन स्थान (Admin से सक्रिय/निष्क्रिय करें)
-      </div>
-    </aside>
-  );
+  // If no code exists and showAdminPlaceholder is true, show preview box for admin only
+  if (showAdminPlaceholder) {
+    return (
+      <aside 
+        aria-label={`Advertisement placeholder: ${slot.label || slot.slotKey}`}
+        className={`w-full my-3 px-3 py-3 border border-dashed border-slate-300 rounded-lg bg-slate-50 text-center flex flex-col items-center justify-center transition-all ${className}`}
+        style={{ minHeight: `${minHeight}px` }}
+      >
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-slate-600 uppercase mb-1">
+          <span>विज्ञापन स्थान (Admin Preview)</span>
+        </div>
+        <div className="text-xs text-slate-600 font-medium">
+          {slot.label || slot.slotKey} ({slot.provider || 'AdSense'})
+        </div>
+      </aside>
+    );
+  }
+
+  // For regular public visitors, if no ad code is configured, return null (NO placeholder box!)
+  return null;
 };

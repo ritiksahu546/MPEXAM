@@ -43,8 +43,7 @@ const STORAGE_KEYS = {
   ADS: 'mp_exam_ads_v2',
   LINKS: 'mp_exam_links_v2',
   SETTINGS: 'mp_exam_settings_v2',
-  HOMEPAGE: 'mp_exam_homepage_v2',
-  DEMO_USER: 'mp_exam_admin_session_v2'
+  HOMEPAGE: 'mp_exam_homepage_v2'
 };
 
 export const INITIAL_HOMEPAGE_SECTIONS: HomepageSectionsConfig = {
@@ -53,8 +52,25 @@ export const INITIAL_HOMEPAGE_SECTIONS: HomepageSectionsConfig = {
   trendingPosts: true,
   importantLinks: true,
   announcementBar: true,
-  quickCategoryGrid: true
+  quickCategoryGrid: true,
+  mppscUpdates: true,
+  mpesbUpdates: true,
+  policeUpdates: true,
+  teacherUpdates: true,
+  examCalendar: true
 };
+
+// In-memory cache to optimize Firebase reads & reduce layout thrashing
+let memoryPostsCache: { data: Post[]; timestamp: number } | null = null;
+let memoryAdminPostsCache: { data: Post[]; timestamp: number } | null = null;
+let memoryCategoriesCache: { data: Category[]; timestamp: number } | null = null;
+const CACHE_TTL_MS = 60 * 1000; // 1 minute
+
+export function invalidateCache() {
+  memoryPostsCache = null;
+  memoryAdminPostsCache = null;
+  memoryCategoriesCache = null;
+}
 
 export const INITIAL_TAGS: Tag[] = [
   { id: 'tag_1', name: 'MP Police 2026', slug: 'mp-police-2026', postCount: 5 },
@@ -66,70 +82,124 @@ export const INITIAL_TAGS: Tag[] = [
   { id: 'tag_7', name: 'Samvida Shikshak', slug: 'samvida-shikshak', postCount: 4 }
 ];
 
-// Initialize LocalStorage with rich sample data if not present (Requirement #6: Never blank)
-function initializeLocalStorage() {
-  if (typeof window === 'undefined') return;
-  if (!localStorage.getItem(STORAGE_KEYS.POSTS)) {
-    localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(INITIAL_POSTS));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.CATEGORIES)) {
-    localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(INITIAL_CATEGORIES));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.TAGS)) {
-    localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(INITIAL_TAGS));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.ADS)) {
-    localStorage.setItem(STORAGE_KEYS.ADS, JSON.stringify(INITIAL_AD_SLOTS));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.LINKS)) {
-    localStorage.setItem(STORAGE_KEYS.LINKS, JSON.stringify(INITIAL_IMPORTANT_LINKS));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.SETTINGS)) {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(INITIAL_SITE_SETTINGS));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.HOMEPAGE)) {
-    localStorage.setItem(STORAGE_KEYS.HOMEPAGE, JSON.stringify(INITIAL_HOMEPAGE_SECTIONS));
-  }
-}
-
-initializeLocalStorage();
-
 // ==========================================
 // 1. POSTS API
 // ==========================================
 
+/**
+ * Public-facing post fetch for regular visitors.
+ * Strictly queries where('status', '==', 'published') to comply with Firestore security rules.
+ */
 export async function getPosts(): Promise<Post[]> {
+  if (memoryPostsCache && (Date.now() - memoryPostsCache.timestamp < CACHE_TTL_MS)) {
+    return memoryPostsCache.data;
+  }
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const publicQuery = query(
+        collection(db, 'posts'),
+        where('status', '==', 'published')
+      );
+      const snap = await getDocs(publicQuery);
+      const firestorePosts = snap.docs.map(d => ({ ...d.data(), id: d.id } as Post));
+      // Sort descending by publishedAt or createdAt
+      firestorePosts.sort((a, b) => {
+        const dateA = new Date(a.publishedAt || a.createdAt || 0).getTime();
+        const dateB = new Date(b.publishedAt || b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+      // Cache to local storage & memory
+      memoryPostsCache = { data: firestorePosts, timestamp: Date.now() };
+      try {
+        localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(firestorePosts));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+      return firestorePosts;
+    } catch (error) {
+      console.warn('Firestore published posts fetch error:', error);
+      // Fallback only to previously fetched real posts if available in localStorage
+      const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const publishedFallback = parsed.filter((p: Post) => p.status === 'published');
+            return publishedFallback;
+          }
+        } catch {}
+      }
+      return [];
+    }
+  }
+
+  // Fallback to real cached posts if offline, never fake demo posts
+  const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((p: Post) => p.status === 'published');
+      }
+    } catch {}
+  }
+  return [];
+}
+
+/**
+ * Admin-only post fetch used inside the authenticated admin dashboard (where isAdmin() is true).
+ * Retrieves all posts unfiltered (draft, published, archived).
+ */
+export async function getAllPostsForAdmin(): Promise<Post[]> {
+  if (memoryAdminPostsCache && (Date.now() - memoryAdminPostsCache.timestamp < CACHE_TTL_MS)) {
+    return memoryAdminPostsCache.data;
+  }
+
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'posts'));
-      if (!snap.empty) {
-        const firestorePosts = snap.docs.map(d => ({ ...d.data(), id: d.id } as Post));
-        // Sort descending by publishedAt or createdAt
-        firestorePosts.sort((a, b) => {
-          const dateA = new Date(a.publishedAt || a.createdAt || 0).getTime();
-          const dateB = new Date(b.publishedAt || b.createdAt || 0).getTime();
-          return dateB - dateA;
-        });
-        // Cache to local storage
+      const firestorePosts = snap.docs.map(d => ({ ...d.data(), id: d.id } as Post));
+      firestorePosts.sort((a, b) => {
+        const dateA = new Date(a.publishedAt || a.createdAt || 0).getTime();
+        const dateB = new Date(b.publishedAt || b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+      memoryAdminPostsCache = { data: firestorePosts, timestamp: Date.now() };
+      try {
         localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(firestorePosts));
-        return firestorePosts;
-      }
+      } catch {}
+      return firestorePosts;
     } catch (error) {
-      console.warn('Firestore posts fetch notice (using cache):', error);
+      console.warn('Firestore admin posts fetch error:', error);
+      const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {}
+      }
+      return [];
     }
   }
 
   const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
-  return stored ? JSON.parse(stored) : INITIAL_POSTS;
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
 }
 
 export async function getPublishedPosts(): Promise<Post[]> {
-  const posts = await getPosts();
-  return posts.filter(p => p.status === 'published');
+  return await getPosts();
 }
 
 export async function getPostBySlug(slug: string): Promise<Post | null> {
-  const posts = await getPosts();
+  const cachedList = memoryAdminPostsCache?.data || memoryPostsCache?.data;
+  const posts = cachedList || await getPosts();
   const normalizedSlug = slug.toLowerCase().trim();
   const post = posts.find(p => 
     p.slug.toLowerCase().trim() === normalizedSlug || 
@@ -139,7 +209,7 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function savePost(post: Post): Promise<Post> {
-  const posts = await getPosts();
+  const posts = await getAllPostsForAdmin();
   const index = posts.findIndex(p => p.id === post.id);
   const now = new Date().toISOString();
 
@@ -168,6 +238,7 @@ export async function savePost(post: Post): Promise<Post> {
   }
 
   localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(posts));
+  invalidateCache();
 
   if (isFirebaseConfigured && db) {
     try {
@@ -181,9 +252,10 @@ export async function savePost(post: Post): Promise<Post> {
 }
 
 export async function deletePost(postId: string): Promise<void> {
-  const posts = await getPosts();
+  const posts = await getAllPostsForAdmin();
   const filtered = posts.filter(p => p.id !== postId);
   localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(filtered));
+  invalidateCache();
 
   if (isFirebaseConfigured && db) {
     try {
@@ -195,7 +267,7 @@ export async function deletePost(postId: string): Promise<void> {
 }
 
 export async function togglePublishPost(postId: string, publish: boolean): Promise<Post | null> {
-  const posts = await getPosts();
+  const posts = await getAllPostsForAdmin();
   const post = posts.find(p => p.id === postId);
   if (!post) return null;
 
@@ -250,22 +322,41 @@ export async function incrementPostViews(postId: string): Promise<void> {
 // ==========================================
 
 export async function getCategories(): Promise<Category[]> {
+  if (memoryCategoriesCache && (Date.now() - memoryCategoriesCache.timestamp < CACHE_TTL_MS)) {
+    return memoryCategoriesCache.data;
+  }
+
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'categories'));
-      if (!snap.empty) {
-        const firestoreCats = snap.docs.map(d => ({ ...d.data(), id: d.id } as Category));
-        firestoreCats.sort((a, b) => (a.order || 0) - (b.order || 0));
+      const firestoreCats = snap.docs.map(d => ({ ...d.data(), id: d.id } as Category));
+      firestoreCats.sort((a, b) => (a.order || 0) - (b.order || 0));
+      memoryCategoriesCache = { data: firestoreCats, timestamp: Date.now() };
+      try {
         localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(firestoreCats));
-        return firestoreCats;
-      }
+      } catch {}
+      return firestoreCats;
     } catch (error) {
       console.warn('Categories Firestore read notice:', error);
+      const stored = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {}
+      }
+      return [];
     }
   }
 
   const stored = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
-  return stored ? JSON.parse(stored) : INITIAL_CATEGORIES;
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
 }
 
 export async function saveCategory(category: Category): Promise<Category> {
@@ -310,18 +401,32 @@ export async function getTags(): Promise<Tag[]> {
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'tags'));
-      if (!snap.empty) {
-        const firestoreTags = snap.docs.map(d => ({ ...d.data(), id: d.id } as Tag));
+      const firestoreTags = snap.docs.map(d => ({ ...d.data(), id: d.id } as Tag));
+      try {
         localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(firestoreTags));
-        return firestoreTags;
-      }
+      } catch {}
+      return firestoreTags;
     } catch (error) {
       console.warn('Tags fetch notice:', error);
+      const stored = localStorage.getItem(STORAGE_KEYS.TAGS);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {}
+      }
+      return [];
     }
   }
 
   const stored = localStorage.getItem(STORAGE_KEYS.TAGS);
-  return stored ? JSON.parse(stored) : INITIAL_TAGS;
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
 }
 
 export async function saveTag(tag: Tag): Promise<Tag> {
@@ -366,17 +471,31 @@ export async function getAdSlots(): Promise<AdSlotConfig[]> {
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'ads'));
-      if (!snap.empty) {
-        const firestoreAds = snap.docs.map(d => ({ ...d.data(), id: d.id } as AdSlotConfig));
+      const firestoreAds = snap.docs.map(d => ({ ...d.data(), id: d.id } as AdSlotConfig));
+      try {
         localStorage.setItem(STORAGE_KEYS.ADS, JSON.stringify(firestoreAds));
-        return firestoreAds;
-      }
+      } catch {}
+      return firestoreAds;
     } catch (error) {
       console.warn('Ad slots read notice:', error);
+      const stored = localStorage.getItem(STORAGE_KEYS.ADS);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {}
+      }
+      return [];
     }
   }
   const stored = localStorage.getItem(STORAGE_KEYS.ADS);
-  return stored ? JSON.parse(stored) : INITIAL_AD_SLOTS;
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
 }
 
 export async function saveAdSlot(slot: AdSlotConfig): Promise<AdSlotConfig> {
@@ -428,17 +547,31 @@ export async function getImportantLinks(): Promise<ImportantLink[]> {
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'links'));
-      if (!snap.empty) {
-        const firestoreLinks = snap.docs.map(d => ({ ...d.data(), id: d.id } as ImportantLink));
+      const firestoreLinks = snap.docs.map(d => ({ ...d.data(), id: d.id } as ImportantLink));
+      try {
         localStorage.setItem(STORAGE_KEYS.LINKS, JSON.stringify(firestoreLinks));
-        return firestoreLinks;
-      }
+      } catch {}
+      return firestoreLinks;
     } catch (error) {
       console.warn('Links read notice:', error);
+      const stored = localStorage.getItem(STORAGE_KEYS.LINKS);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {}
+      }
+      return [];
     }
   }
   const stored = localStorage.getItem(STORAGE_KEYS.LINKS);
-  return stored ? JSON.parse(stored) : INITIAL_IMPORTANT_LINKS;
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
 }
 
 export async function saveImportantLink(link: ImportantLink): Promise<ImportantLink> {
@@ -552,19 +685,6 @@ export async function updateSettings(settings: SiteSettings): Promise<SiteSettin
 // ==========================================
 // 8. ADMIN SESSION & SEEDING UTILITIES
 // ==========================================
-
-export function getDemoAdminUser(): UserProfile | null {
-  const stored = localStorage.getItem(STORAGE_KEYS.DEMO_USER);
-  return stored ? JSON.parse(stored) : null;
-}
-
-export function setDemoAdminUser(user: UserProfile | null) {
-  if (user) {
-    localStorage.setItem(STORAGE_KEYS.DEMO_USER, JSON.stringify(user));
-  } else {
-    localStorage.removeItem(STORAGE_KEYS.DEMO_USER);
-  }
-}
 
 /**
  * Migration helper: Seeds the initial sample data into Firestore if Firestore is empty.

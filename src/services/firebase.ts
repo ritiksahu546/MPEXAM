@@ -16,6 +16,14 @@ import {
   onAuthStateChanged, 
   GoogleAuthProvider, 
   signInWithPopup,
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
+  checkActionCode,
+  ActionCodeSettings,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   User 
 } from 'firebase/auth';
 import { doc, getDocFromServer } from 'firebase/firestore';
@@ -86,12 +94,70 @@ export async function testFirebaseConnection(): Promise<boolean> {
   }
 }
 
-export async function loginWithEmail(email: string, pass: string) {
+export async function loginWithEmail(email: string, pass: string, rememberMe = true) {
   if (!auth) {
     throw new Error('Firebase Auth is not initialized. Please verify your Firebase configuration in .env');
   }
+  try {
+    await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+  } catch (persistErr) {
+    console.warn('Persistence configuration notice:', persistErr);
+  }
   const cred = await signInWithEmailAndPassword(auth, email, pass);
   return cred.user;
+}
+
+export async function sendAdminPasswordReset(email: string): Promise<void> {
+  if (!auth) {
+    throw new Error('Firebase Auth is not initialized. Please verify your Firebase configuration in .env');
+  }
+
+  // Determine current origin or default to production domain
+  const origin = typeof window !== 'undefined' && window.location.origin 
+    ? window.location.origin 
+    : 'https://mpexam.vercel.app';
+
+  // ActionCodeSettings ensures the password reset link directs back to the app with oobCode and mode=resetPassword
+  const actionCodeSettings: ActionCodeSettings = {
+    url: `${origin}/?mode=resetPassword`,
+    handleCodeInApp: true,
+  };
+
+  try {
+    await sendPasswordResetEmail(auth, email, actionCodeSettings);
+  } catch (err: any) {
+    // If the continueUrl or domain is not authorized in Firebase Console yet, fallback gracefully to default template
+    if (
+      err?.code === 'auth/unauthorized-continue-uri' ||
+      err?.code === 'auth/invalid-continue-uri'
+    ) {
+      console.warn('ActionCodeSettings continue URI warning (falling back to standard email link):', err);
+      await sendPasswordResetEmail(auth, email);
+    } else {
+      throw err;
+    }
+  }
+}
+
+/**
+ * Verifies a password reset oobCode and returns the user's email.
+ * Note: verifyPasswordResetCode does NOT consume the action code.
+ */
+export async function verifyResetCode(oobCode: string): Promise<string> {
+  if (!auth) {
+    throw new Error('Firebase Auth is not initialized.');
+  }
+  return await verifyPasswordResetCode(auth, oobCode);
+}
+
+/**
+ * Confirms password reset with the new password and consumes the oobCode.
+ */
+export async function confirmResetPassword(oobCode: string, newPass: string): Promise<void> {
+  if (!auth) {
+    throw new Error('Firebase Auth is not initialized.');
+  }
+  await confirmPasswordReset(auth, oobCode, newPass);
 }
 
 export async function signInWithGoogle() {
@@ -99,6 +165,10 @@ export async function signInWithGoogle() {
     throw new Error('Firebase Auth is not configured. Please set your Firebase credentials.');
   }
   const provider = new GoogleAuthProvider();
+  // Force account selection screen so the user can choose the right admin account
+  provider.setCustomParameters({
+    prompt: 'select_account'
+  });
   return await signInWithPopup(auth, provider);
 }
 

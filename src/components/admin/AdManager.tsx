@@ -54,7 +54,11 @@ export const AdManager: React.FC<Props> = ({ adSlots, onSaveAdSlot }) => {
       const normalized: AdSlotConfig = {
         ...editingSlot,
         enabled: Boolean(editingSlot.enabled),
-        isActive: Boolean(editingSlot.enabled)
+        isActive: Boolean(editingSlot.enabled),
+        adCode: editingSlot.adCode || editingSlot.code || '',
+        code: editingSlot.code || editingSlot.adCode || '',
+        slot: editingSlot.slot || (editingSlot.slotKey as any),
+        slotKey: editingSlot.slotKey || (editingSlot.slot as string)
       };
       await onSaveAdSlot(normalized);
       setSuccessMsg(`स्लॉट ${normalized.slotKey} सफलतापूर्वक अपडेट किया गया।`);

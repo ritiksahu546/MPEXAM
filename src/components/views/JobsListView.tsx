@@ -3,6 +3,7 @@ import { Post, Category, AdSlotConfig } from '../../types';
 import { JobCard } from '../cards/JobCard';
 import { AdSlot } from '../common/AdSlot';
 import { Breadcrumbs } from '../common/Breadcrumbs';
+import { SEOHead } from '../common/SEOHead';
 import { 
   Filter, 
   RotateCcw, 
@@ -123,6 +124,26 @@ export const JobsListView: React.FC<Props> = ({
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-6">
       
+      {/* Dynamic SEO Meta */}
+      <SEOHead
+        title={`${activeCategoryObj ? activeCategoryObj.nameHindi : pageTitle} - MP Exam Update 2026`}
+        description={activeCategoryObj?.description || `${pageTitle} - मध्य प्रदेश सरकारी भर्ती, परीक्षा, प्रवेश पत्र, रिजल्ट एवं उत्तर कुंजी की नवीनतम सूची।`}
+        canonicalUrl={`https://mpexamupdate.in/#${activeCategoryObj ? `category/${activeCategoryObj.slug}` : (initialPostType || 'jobs')}`}
+        ogType="website"
+        breadcrumbs={
+          activeCategoryObj
+            ? [
+                { name: 'होम', item: 'https://mpexamupdate.in/' },
+                { name: 'श्रेणियां', item: 'https://mpexamupdate.in/#categories' },
+                { name: activeCategoryObj.nameHindi, item: `https://mpexamupdate.in/#category/${activeCategoryObj.slug}` }
+              ]
+            : [
+                { name: 'होम', item: 'https://mpexamupdate.in/' },
+                { name: pageTitle, item: `https://mpexamupdate.in/#${initialPostType || 'jobs'}` }
+              ]
+        }
+      />
+
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={

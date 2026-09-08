@@ -5,6 +5,7 @@ import { Breadcrumbs } from '../common/Breadcrumbs';
 import { Disclaimer } from '../common/Disclaimer';
 import { ShareButtons } from '../common/ShareButtons';
 import { AdSlot } from '../common/AdSlot';
+import { SEOHead } from '../common/SEOHead';
 import { 
   Calendar, 
   Building, 
@@ -95,17 +96,32 @@ export const JobDetailView: React.FC<Props> = ({
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 animate-fade-in space-y-6">
       
-      {/* JSON-LD Structured SEO Schema */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingSchema) }}
+      {/* Dynamic SEO Head & Structured Data */}
+      <SEOHead
+        title={post.seoTitle || post.titleHindi || post.title}
+        description={post.seoDescription || post.excerpt || `${post.title} - पात्रता, आयु सीमा, चयन प्रक्रिया, महत्वपूर्ण तिथियां, आवेदन शुल्क एवं आधिकारिक अधिसूचना।`}
+        keywords={post.focusKeyword ? `${post.focusKeyword}, ${post.secondaryKeywords || ''}, MP Jobs 2026, ${post.organization}` : (post.tags || []).join(', ')}
+        canonicalUrl={post.canonicalUrl || `https://mpexamupdate.in/#post/${post.slug}`}
+        ogType="article"
+        ogImage={post.featuredImage}
+        publishedTime={post.createdAt}
+        modifiedTime={post.updatedAt}
+        breadcrumbs={[
+          { name: 'होम', item: 'https://mpexamupdate.in/' },
+          { name: post.categoryName, item: `https://mpexamupdate.in/#category/${post.categoryId}` },
+          { name: post.titleHindi || post.title, item: `https://mpexamupdate.in/#post/${post.slug}` }
+        ]}
+        faqs={post.faqs}
+        jobPosting={post.postType === 'job' ? {
+          title: post.title,
+          description: post.excerpt || post.title,
+          datePosted: post.createdAt,
+          validThrough: post.applicationLastDate,
+          organization: post.organization || 'Government of Madhya Pradesh',
+          officialWebsite: post.officialWebsite,
+          salary: post.salary
+        } : undefined}
       />
-      {faqSchema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-        />
-      )}
 
       {/* Breadcrumbs */}
       <Breadcrumbs
@@ -354,6 +370,30 @@ export const JobDetailView: React.FC<Props> = ({
           </section>
         )}
 
+        {post.syllabus && (
+          <section aria-labelledby="syllabus-heading" className="space-y-2">
+            <h3 id="syllabus-heading" className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-indigo-700" />
+              <span>पाठ्यक्रम विवरण (Syllabus Details)</span>
+            </h3>
+            <div className="bg-blue-50/40 p-4 rounded-xl border border-blue-150 text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+              {post.syllabus}
+            </div>
+          </section>
+        )}
+
+        {post.documentsRequired && (
+          <section aria-labelledby="documents-heading" className="space-y-2">
+            <h3 id="documents-heading" className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-amber-700" />
+              <span>आवश्यक दस्तावेज (Required Documents)</span>
+            </h3>
+            <div className="bg-amber-50/40 p-4 rounded-xl border border-amber-200 text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+              {post.documentsRequired}
+            </div>
+          </section>
+        )}
+
         {/* Detailed Content / Rules */}
         {post.content && (
           <section aria-labelledby="details-heading" className="space-y-2">
@@ -472,6 +512,25 @@ export const JobDetailView: React.FC<Props> = ({
                         className="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-lg text-xs shadow-xs transition-colors"
                       >
                         <span>रिजल्ट देखें</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </td>
+                  </tr>
+                )}
+
+                {post.answerKeyLink && (
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-3 px-4 font-bold text-slate-900">
+                      उत्तर कुंजी डाउनलोड करें (Download Answer Key)
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <a
+                        href={post.answerKeyLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 bg-purple-700 hover:bg-purple-800 text-white font-bold px-4 py-2 rounded-lg text-xs shadow-xs transition-colors"
+                      >
+                        <span>उत्तर कुंजी लिंक</span>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     </td>

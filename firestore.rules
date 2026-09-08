@@ -12,11 +12,20 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'gig.ritik546@gmail.com' ||
+        request.auth.token.email == 'admin@mpexamupdate.in'
+      );
+    }
+
     function isAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == "gig.ritik546@gmail.com" ||
-        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin')
+        isSuperAdmin() ||
+        (
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid)) && 
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin'
+        )
       );
     }
 
@@ -34,7 +43,7 @@ service cloud.firestore {
       allow get: if isValidId(postId) && (
         resource.data.status == 'published' || isAdmin()
       );
-      allow list: if true;
+      allow list: if resource.data.status == 'published' || isAdmin();
       allow create, delete: if isAdmin();
       allow update: if isAdmin() || (
         resource.data.status == 'published' &&
@@ -93,8 +102,8 @@ service cloud.firestore {
 
     // Admin collection to manage authorized admins
     match /admins/{adminId} {
-      allow get: if isSignedIn() && request.auth.uid == adminId;
-      allow list, write: if isAdmin();
+      allow get: if isSignedIn() && (request.auth.uid == adminId || isAdmin());
+      allow list, write: if isAdmin() || (isSignedIn() && request.auth.uid == adminId && isSuperAdmin());
     }
   }
 }

@@ -244,6 +244,96 @@ export const HomepageManager: React.FC<Props> = ({
             />
           </div>
 
+          {/* MPPSC Updates */}
+          <div className="p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+            <div>
+              <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+                MPPSC विशेष अपडेट (MPPSC Dedicated Updates)
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                राज्य सेवा परीक्षा, राज्य वन सेवा एवं राज्य पात्रता परीक्षा (SET)
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={config.mppscUpdates !== false}
+              onChange={() => handleToggle('mppscUpdates')}
+              className="w-5 h-5 text-blue-600 rounded cursor-pointer"
+            />
+          </div>
+
+          {/* MPESB Updates */}
+          <div className="p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+            <div>
+              <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+                MPESB (व्यापम) विशेष अपडेट (MPESB Dedicated Updates)
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                कर्मचारी चयन मंडल की ग्रुप 1-5, सब इंजीनियर एवं अन्य परीक्षाएं
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={config.mpesbUpdates !== false}
+              onChange={() => handleToggle('mpesbUpdates')}
+              className="w-5 h-5 text-blue-600 rounded cursor-pointer"
+            />
+          </div>
+
+          {/* Police Updates */}
+          <div className="p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+            <div>
+              <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+                मध्य प्रदेश पुलिस भर्ती (MP Police Updates)
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                आरक्षक (कांस्टेबल), उप-निरीक्षक (SI) एवं विशेष सशस्त्र बल भर्ती
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={config.policeUpdates !== false}
+              onChange={() => handleToggle('policeUpdates')}
+              className="w-5 h-5 text-blue-600 rounded cursor-pointer"
+            />
+          </div>
+
+          {/* Teacher Updates */}
+          <div className="p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+            <div>
+              <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+                शिक्षक भर्ती एवं पात्रता परीक्षा (MP Teacher / Shikshak)
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                प्राथमिक, माध्यमिक एवं उच्च माध्यमिक शिक्षक भर्ती (वर्ग 1, 2, 3)
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={config.teacherUpdates !== false}
+              onChange={() => handleToggle('teacherUpdates')}
+              className="w-5 h-5 text-blue-600 rounded cursor-pointer"
+            />
+          </div>
+
+          {/* Exam Calendar */}
+          <div className="p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+            <div>
+              <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+                परीक्षा कैलेंडर एवं तिथियां (Upcoming Exam Calendar)
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                आगामी परीक्षाओं की समय सारिणी एवं अंतिम तिथि ट्रैकर तालिका
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={config.examCalendar !== false}
+              onChange={() => handleToggle('examCalendar')}
+              className="w-5 h-5 text-blue-600 rounded cursor-pointer"
+            />
+          </div>
+
         </div>
       </div>
     </div>

@@ -187,21 +187,55 @@ export async function uploadPdfToStorage(file: File, folder = 'notifications'): 
 }
 
 /**
- * Admin authorization check via Firestore 'admins' collection
+ * Authorized Super Admin Emails (App owner & default portal admin)
+ */
+export const SUPER_ADMIN_EMAILS = [
+  'gig.ritik546@gmail.com',
+  'admin@mpexamupdate.in'
+];
+
+/**
+ * Admin authorization check via Firestore 'admins' collection.
+ * Also authorizes registered owner/super-admin emails and ensures their
+ * admin role document is bootstrapped in the Firestore 'admins' collection.
  */
 export async function verifyAdminAuthorization(user: User): Promise<boolean> {
-  // Hardcoded owner/superadmin check fallback
-  if (user.email === 'gig.ritik546@gmail.com') {
+  const userEmail = (user.email || '').toLowerCase().trim();
+  const isSuperAdmin = SUPER_ADMIN_EMAILS.some(e => e.toLowerCase() === userEmail);
+
+  // 1. Designated Super Admins (app owner) ALWAYS have immediate admin authorization
+  if (isSuperAdmin) {
+    if (db) {
+      try {
+        const adminDocRef = doc(db, 'admins', user.uid);
+        await setDoc(adminDocRef, {
+          uid: user.uid,
+          email: userEmail,
+          role: 'admin',
+          displayName: user.displayName || 'Authorized Admin',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        console.log(`Verified and synced super admin document for ${userEmail}`);
+      } catch (writeErr) {
+        console.warn('Notice syncing super admin doc:', writeErr);
+      }
+    }
     return true;
   }
 
-  if (!db) return false;
+  // 2. For other users, verify role === 'admin' in Firestore 'admins' collection
+  if (!db) {
+    return false;
+  }
 
   try {
     const adminDocRef = doc(db, 'admins', user.uid);
     const snap = await getDoc(adminDocRef);
     if (snap.exists()) {
       const data = snap.data();
+      if (data.active === false) {
+        return false;
+      }
       return data.role === 'admin';
     }
   } catch (err) {

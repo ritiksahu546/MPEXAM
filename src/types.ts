@@ -150,6 +150,11 @@ export interface HomepageSectionsConfig {
   importantLinks: boolean;
   announcementBar: boolean;
   quickCategoryGrid: boolean;
+  mppscUpdates?: boolean;
+  mpesbUpdates?: boolean;
+  policeUpdates?: boolean;
+  teacherUpdates?: boolean;
+  examCalendar?: boolean;
 }
 
 export interface SiteSettings {
