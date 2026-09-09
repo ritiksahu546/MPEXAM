@@ -21,7 +21,7 @@ export const Breadcrumbs: React.FC<Props> = ({ items, onNavigate }) => {
         '@type': 'ListItem',
         position: 1,
         name: 'होम',
-        item: typeof window !== 'undefined' ? window.location.origin : 'https://mpexamupdate.in'
+        item: typeof window !== 'undefined' ? window.location.origin : 'https://www.mpexamupdates.in'
       },
       ...items.map((item, idx) => ({
         '@type': 'ListItem',

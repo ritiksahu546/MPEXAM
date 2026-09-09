@@ -7,7 +7,7 @@ import { INITIAL_POSTS, INITIAL_CATEGORIES } from '../src/data/initialData';
 import { Post, Category } from '../src/types';
 import { generateAndWriteSitemap } from './build-sitemap';
 
-const BASE_URL = 'https://mpexamupdate.in';
+const BASE_URL = 'https://www.mpexamupdates.in';
 
 interface RouteMetadata {
   route: string;

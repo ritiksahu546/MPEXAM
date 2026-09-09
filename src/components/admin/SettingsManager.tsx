@@ -224,7 +224,7 @@ export const SettingsManager: React.FC<Props> = ({ settings, onSaveSettings, onS
               type="email"
               value={formData.contactEmail || ''}
               onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
-              placeholder="support@mpexamupdate.in"
+              placeholder="support@mpexamupdates.in"
               className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
             />
           </div>

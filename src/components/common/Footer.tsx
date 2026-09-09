@@ -198,7 +198,7 @@ export const Footer: React.FC<Props> = ({ settings, categories, importantLinks =
         <div className="bg-slate-800/80 border border-slate-700/80 rounded-lg p-3 text-xs text-slate-400 mb-6 flex items-start gap-2.5">
           <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            <strong>वैधानिक अस्वीकरण:</strong> mpexamupdate.in किसी भी सरकारी विभाग अथवा आयोग की आधिकारिक वेबसाइट नहीं है। यह एक शैक्षणिक एवं सूचनात्मक पोर्टल है, जिसका उद्देश्य मध्य प्रदेश के युवाओं को सरकारी भर्ती व परीक्षा की ताज़ा जानकारी प्रदान करना है। आवेदन से पूर्व आधिकारिक विज्ञापन का अवलोकन अवश्य करें।
+            <strong>वैधानिक अस्वीकरण:</strong> mpexamupdates.in किसी भी सरकारी विभाग अथवा आयोग की आधिकारिक वेबसाइट नहीं है। यह एक शैक्षणिक एवं सूचनात्मक पोर्टल है, जिसका उद्देश्य मध्य प्रदेश के युवाओं को सरकारी भर्ती व परीक्षा की ताज़ा जानकारी प्रदान करना है। आवेदन से पूर्व आधिकारिक विज्ञापन का अवलोकन अवश्य करें।
           </p>
         </div>
 

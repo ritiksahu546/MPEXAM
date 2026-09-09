@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Save, 
@@ -20,6 +20,7 @@ import {
 import { Post, Category, Tag } from '../../types';
 import { RichTextEditor } from './RichTextEditor';
 import { uploadImageToStorage, uploadPdfToStorage } from '../../services/firebase';
+import { getCategories } from '../../services/storage';
 import { JobDetailView } from '../views/JobDetailView';
 
 interface Props {
@@ -100,6 +101,53 @@ export const PostFormModal: React.FC<Props> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
 
+  // Manage loaded categories and loading state
+  const [activeCategories, setActiveCategories] = useState<Category[]>(categories || []);
+  const [isLoadingCategories, setIsLoadingCategories] = useState<boolean>(!categories || categories.length === 0);
+
+  // Sync with prop changes or load dynamically if empty
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      setActiveCategories(categories);
+      setIsLoadingCategories(false);
+    } else {
+      let isMounted = true;
+      setIsLoadingCategories(true);
+      getCategories()
+        .then(cats => {
+          if (isMounted) {
+            setActiveCategories(cats);
+            setIsLoadingCategories(false);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to load categories in modal:', err);
+          if (isMounted) {
+            setIsLoadingCategories(false);
+          }
+        });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [categories]);
+
+  // Ensure new post selects an existing category once loaded
+  useEffect(() => {
+    if (!isEditing && activeCategories.length > 0) {
+      const match = activeCategories.find(c => c.id === formData.categoryId);
+      if (!match) {
+        const first = activeCategories[0];
+        setFormData(prev => ({
+          ...prev,
+          categoryId: first.id,
+          categoryName: first.nameHindi,
+          category: first.nameEnglish
+        }));
+      }
+    }
+  }, [activeCategories, isEditing, formData.categoryId]);
+
   // Auto generate slug if empty
   const handleTitleChange = (val: string) => {
     setFormData(prev => {
@@ -116,7 +164,7 @@ export const PostFormModal: React.FC<Props> = ({
   };
 
   const handleCategoryChange = (catId: string) => {
-    const selected = categories.find(c => c.id === catId);
+    const selected = activeCategories.find(c => c.id === catId);
     setFormData(prev => ({
       ...prev,
       categoryId: catId,
@@ -212,8 +260,10 @@ export const PostFormModal: React.FC<Props> = ({
         status: targetStatus || formData.status,
         updatedAt: new Date().toISOString()
       };
-      if (toSave.status === 'published' && !toSave.publishedAt) {
-        toSave.publishedAt = new Date().toISOString();
+      if (toSave.status === 'published') {
+        toSave.publishedAt = toSave.publishedAt || new Date().toISOString();
+      } else if (!toSave.publishedAt) {
+        delete (toSave as any).publishedAt;
       }
       await onSave(toSave);
       onClose();
@@ -389,19 +439,38 @@ export const PostFormModal: React.FC<Props> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block font-bold text-slate-800 mb-1">
-                    श्रेणी (Category)
+                    श्रेणी (Category) <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={formData.categoryId}
-                    onChange={e => handleCategoryChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white"
-                  >
-                    {categories.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.nameHindi} ({c.nameEnglish})
-                      </option>
-                    ))}
-                  </select>
+                  {isLoadingCategories ? (
+                    <div className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-xl bg-slate-50 text-slate-500 text-xs">
+                      <span className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+                      <span>श्रेणियां लोड हो रही हैं...</span>
+                    </div>
+                  ) : activeCategories.length === 0 ? (
+                    <div className="flex items-center gap-2 px-3 py-2 border border-amber-300 rounded-xl bg-amber-50 text-amber-800 text-xs">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                      <span>कोई श्रेणी उपलब्ध नहीं है</span>
+                    </div>
+                  ) : (
+                    <select
+                      value={formData.categoryId}
+                      onChange={e => handleCategoryChange(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white text-sm"
+                      required
+                    >
+                      {activeCategories.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.nameHindi} ({c.nameEnglish})
+                        </option>
+                      ))}
+                      {/* Preserve existing post category if not in activeCategories list */}
+                      {formData.categoryId && !activeCategories.some(c => c.id === formData.categoryId) && (
+                        <option value={formData.categoryId}>
+                          {formData.categoryName || formData.category || formData.categoryId}
+                        </option>
+                      )}
+                    </select>
+                  )}
                 </div>
 
                 <div>
@@ -984,7 +1053,7 @@ export const PostFormModal: React.FC<Props> = ({
                     type="url"
                     value={formData.canonicalUrl || ''}
                     onChange={e => setFormData({ ...formData, canonicalUrl: e.target.value })}
-                    placeholder={`https://mpexamupdate.in/#post/${formData.slug || ''}`}
+                    placeholder={`https://www.mpexamupdates.in/job/${formData.slug || ''}`}
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                 </div>
@@ -1151,7 +1220,7 @@ export const PostFormModal: React.FC<Props> = ({
               <JobDetailView
                 post={formData}
                 relatedPosts={[]}
-                categories={categories}
+                categories={activeCategories}
                 adSlots={[]}
                 onNavigate={() => {}}
                 onSelectPost={() => {}}

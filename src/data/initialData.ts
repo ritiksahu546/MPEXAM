@@ -839,7 +839,7 @@ export const INITIAL_SITE_SETTINGS: SiteSettings = {
   siteName: 'MP Exam Update',
   siteTagline: 'मध्य प्रदेश सरकारी नौकरी, एडमिट कार्ड व परीक्षा पोर्टल 2026',
   description: 'मध्य प्रदेश की समस्त सरकारी भर्तियां जैसे MPPSC, MPESB (व्यापम), एमपी पुलिस, पटवारी, शिक्षक भर्ती, एडमिट कार्ड, रिजल्ट और आंसर की की सबसे तेज और सटीक जानकारी।',
-  contactEmail: 'contact@mpexamupdate.in',
+  contactEmail: 'contact@mpexamupdates.in',
   telegramLink: 'https://t.me/mpexamupdate_official',
   whatsappLink: 'https://whatsapp.com/channel/mpexamupdate',
   youtubeLink: 'https://youtube.com/@mpexamupdate',

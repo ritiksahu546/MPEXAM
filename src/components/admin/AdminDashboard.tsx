@@ -175,8 +175,15 @@ export const AdminDashboard: React.FC<Props> = ({
       ...post,
       status: nextStatus,
       updatedAt: new Date().toISOString(),
-      publishedAt: nextStatus === 'published' ? (post.publishedAt || new Date().toISOString()) : post.publishedAt
+      ...(nextStatus === 'published'
+        ? { publishedAt: post.publishedAt || new Date().toISOString() }
+        : post.publishedAt
+          ? { publishedAt: post.publishedAt }
+          : {})
     };
+    if (!updated.publishedAt) {
+      delete (updated as any).publishedAt;
+    }
     try {
       await onSavePost(updated);
       showToast(`पोस्ट "${post.title.slice(0, 25)}..." अब ${nextStatus === 'published' ? 'प्रकाशित' : 'ड्राफ्ट'} है।`);

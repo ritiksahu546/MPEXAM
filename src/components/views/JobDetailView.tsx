@@ -98,7 +98,7 @@ export const JobDetailView: React.FC<Props> = ({
   const categorySlug = categories.find(c => c.id === post.categoryId)?.slug || post.categoryId;
   const canonicalPathUrl = (post.canonicalUrl && !post.canonicalUrl.includes('#')) 
     ? post.canonicalUrl 
-    : `https://mpexamupdate.in/job/${post.slug}`;
+    : `https://www.mpexamupdates.in/job/${post.slug}`;
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 animate-fade-in space-y-6">
@@ -114,9 +114,9 @@ export const JobDetailView: React.FC<Props> = ({
         publishedTime={post.createdAt}
         modifiedTime={post.updatedAt}
         breadcrumbs={[
-          { name: 'होम', item: 'https://mpexamupdate.in/' },
-          { name: post.categoryName, item: `https://mpexamupdate.in/category/${categorySlug}` },
-          { name: post.titleHindi || post.title, item: `https://mpexamupdate.in/job/${post.slug}` }
+          { name: 'होम', item: 'https://www.mpexamupdates.in/' },
+          { name: post.categoryName, item: `https://www.mpexamupdates.in/category/${categorySlug}` },
+          { name: post.titleHindi || post.title, item: `https://www.mpexamupdates.in/job/${post.slug}` }
         ]}
         faqs={post.faqs}
         jobPosting={post.postType === 'job' ? {

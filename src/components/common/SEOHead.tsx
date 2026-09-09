@@ -39,7 +39,7 @@ export const SEOHead: React.FC<SEOProps> = ({
   keywords = 'MP Jobs 2026, MPPSC, MPESB, MP Police, Sarkari Result MP, एडमिट कार्ड, परीक्षा परिणाम',
   canonicalUrl,
   ogType = 'website',
-  ogImage = 'https://mpexamupdate.in/og-banner.svg',
+  ogImage = 'https://www.mpexamupdates.in/og-banner.svg',
   publishedTime,
   modifiedTime,
   breadcrumbs,
@@ -80,7 +80,7 @@ export const SEOHead: React.FC<SEOProps> = ({
     }
 
     // 3. Canonical URL (Never contain hash)
-    const rawUrl = canonicalUrl || (typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'https://mpexamupdate.in');
+    const rawUrl = canonicalUrl || (typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'https://www.mpexamupdates.in');
     const currentUrl = rawUrl.split('#')[0];
     setLink('canonical', currentUrl);
 
@@ -117,11 +117,11 @@ export const SEOHead: React.FC<SEOProps> = ({
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: 'MP Exam Update',
-        url: 'https://mpexamupdate.in',
+        url: 'https://www.mpexamupdates.in',
         description: 'मध्य प्रदेश सरकारी नौकरी, MPPSC, MPESB, एडमिट कार्ड, रिजल्ट और परीक्षा पोर्टल',
         potentialAction: {
           '@type': 'SearchAction',
-          target: 'https://mpexamupdate.in/search?q={search_term_string}',
+          target: 'https://www.mpexamupdates.in/search?q={search_term_string}',
           'query-input': 'required name=search_term_string'
         }
       });
@@ -140,14 +140,14 @@ export const SEOHead: React.FC<SEOProps> = ({
         author: {
           '@type': 'Organization',
           name: 'MP Exam Update editorial team',
-          url: 'https://mpexamupdate.in'
+          url: 'https://www.mpexamupdates.in'
         },
         publisher: {
           '@type': 'Organization',
           name: 'MP Exam Update',
           logo: {
             '@type': 'ImageObject',
-            url: 'https://mpexamupdate.in/logo.png'
+            url: 'https://www.mpexamupdates.in/logo.png'
           }
         },
         mainEntityOfPage: {

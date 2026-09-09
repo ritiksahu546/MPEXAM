@@ -67,7 +67,7 @@ export const HomeView: React.FC<Props> = ({
       <SEOHead
         title={`${settings.siteName || 'MP Exam Update'} - मध्य प्रदेश सरकारी नौकरी, व्यापम, MPPSC, रिजल्ट`}
         description={settings.siteDescription || 'मध्य प्रदेश की समस्त सरकारी भर्तियां (MP Govt Jobs 2026), MPPSC, MPESB (व्यापम), एमपी पुलिस, पटवारी, शिक्षक भर्ती, एडमिट कार्ड, रिजल्ट एवं उत्तर कुंजी सबसे पहले।'}
-        canonicalUrl="https://mpexamupdate.in/"
+        canonicalUrl="https://www.mpexamupdates.in/"
         ogType="website"
       />
 

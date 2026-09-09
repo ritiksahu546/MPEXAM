@@ -73,6 +73,31 @@ export function invalidateCache() {
   memoryCategoriesCache = null;
 }
 
+/**
+ * Recursively removes `undefined` properties from an object so Firestore setDoc / updateDoc does not throw.
+ * Firestore accepts null, boolean, string, number, array, and nested objects, but strictly rejects `undefined`.
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === undefined) {
+    return null as unknown as T;
+  }
+  if (data === null || typeof data !== 'object') {
+    return data;
+  }
+  if (Array.isArray(data)) {
+    return data
+      .filter(item => item !== undefined)
+      .map(item => sanitizeForFirestore(item)) as unknown as T;
+  }
+  const clean: Record<string, any> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) {
+      clean[k] = sanitizeForFirestore(v);
+    }
+  }
+  return clean as T;
+}
+
 export const INITIAL_TAGS: Tag[] = [
   { id: 'tag_1', name: 'MP Police 2026', slug: 'mp-police-2026', postCount: 5 },
   { id: 'tag_2', name: 'MPPSC Pre', slug: 'mppsc-pre', postCount: 4 },
@@ -207,14 +232,26 @@ export async function savePost(post: Post): Promise<Post> {
       .replace(/^-|-$/g, '') + '-' + Date.now().toString().slice(-4);
   }
 
+  let publishedAtVal: string | undefined = undefined;
+  if (post.status === 'published') {
+    publishedAtVal = post.publishedAt || now;
+  } else if (post.publishedAt) {
+    publishedAtVal = post.publishedAt;
+  }
+
   const updatedPost: Post = {
     ...post,
     slug: cleanSlug,
     category: post.category || post.categoryName || 'General',
     updatedAt: now,
-    createdAt: post.createdAt || now,
-    publishedAt: post.status === 'published' ? (post.publishedAt || now) : undefined
+    createdAt: post.createdAt || now
   };
+
+  if (publishedAtVal) {
+    updatedPost.publishedAt = publishedAtVal;
+  } else {
+    delete (updatedPost as any).publishedAt;
+  }
 
   if (index >= 0) {
     posts[index] = updatedPost;
@@ -227,7 +264,8 @@ export async function savePost(post: Post): Promise<Post> {
 
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'posts', updatedPost.id), updatedPost);
+      const cleanPostData = sanitizeForFirestore(updatedPost);
+      await setDoc(doc(db, 'posts', updatedPost.id), cleanPostData);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `posts/${updatedPost.id}`);
     }
@@ -306,6 +344,8 @@ export async function incrementPostViews(postId: string): Promise<void> {
 // 2. CATEGORIES API
 // ==========================================
 
+let categoryInitPromise: Promise<Category[]> | null = null;
+
 export async function getCategories(): Promise<Category[]> {
   if (memoryCategoriesCache && (Date.now() - memoryCategoriesCache.timestamp < CACHE_TTL_MS)) {
     return memoryCategoriesCache.data;
@@ -314,7 +354,35 @@ export async function getCategories(): Promise<Category[]> {
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'categories'));
-      const firestoreCats = snap.docs.map(d => ({ ...d.data(), id: d.id } as Category));
+      let firestoreCats = snap.docs.map(d => ({ ...d.data(), id: d.id } as Category));
+
+      // If /categories is genuinely empty because the collection has never been initialized,
+      // initialize ONLY the category records from the existing INITIAL_CATEGORIES.
+      if (firestoreCats.length === 0) {
+        if (!categoryInitPromise) {
+          categoryInitPromise = (async () => {
+            const initialized: Category[] = [];
+            const existingIds = new Set(firestoreCats.map(c => c.id));
+            for (const cat of INITIAL_CATEGORIES) {
+              if (existingIds.has(cat.id)) continue;
+              const catRef = doc(db, 'categories', cat.id);
+              try {
+                // Use deterministic/stable IDs from INITIAL_CATEGORIES so repeated initialization cannot create duplicates
+                await setDoc(catRef, cat);
+                initialized.push(cat);
+              } catch (writeErr) {
+                console.warn(`Could not persist default category ${cat.id} to Firestore:`, writeErr);
+              }
+            }
+            return initialized.length > 0 ? initialized : [...INITIAL_CATEGORIES];
+          })();
+        }
+
+        const created = await categoryInitPromise;
+        categoryInitPromise = null;
+        firestoreCats = created;
+      }
+
       firestoreCats.sort((a, b) => (a.order || 0) - (b.order || 0));
       memoryCategoriesCache = { data: firestoreCats, timestamp: Date.now() };
       try {
@@ -323,18 +391,20 @@ export async function getCategories(): Promise<Category[]> {
       return firestoreCats;
     } catch (error) {
       console.error('Categories Firestore read notice:', error);
+      // Firestore configured + read error => THROW the error; do NOT silently fall back to stale local/demo data
       throw error;
     }
   }
 
+  // Firebase genuinely unconfigured => preserve existing local/offline fallback behavior
   const stored = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     } catch {}
   }
-  return [];
+  return INITIAL_CATEGORIES;
 }
 
 export async function saveCategory(category: Category): Promise<Category> {
@@ -350,7 +420,7 @@ export async function saveCategory(category: Category): Promise<Category> {
 
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'categories', category.id), category);
+      await setDoc(doc(db, 'categories', category.id), sanitizeForFirestore(category));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `categories/${category.id}`);
     }
@@ -414,7 +484,7 @@ export async function saveTag(tag: Tag): Promise<Tag> {
 
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'tags', tag.id), tag);
+      await setDoc(doc(db, 'tags', tag.id), sanitizeForFirestore(tag));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `tags/${tag.id}`);
     }
@@ -479,7 +549,7 @@ export async function saveAdSlot(slot: AdSlotConfig): Promise<AdSlotConfig> {
 
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'ads', normalizedSlot.id), normalizedSlot);
+      await setDoc(doc(db, 'ads', normalizedSlot.id), sanitizeForFirestore(normalizedSlot));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `ads/${normalizedSlot.id}`);
     }
@@ -545,7 +615,7 @@ export async function saveImportantLink(link: ImportantLink): Promise<ImportantL
 
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'links', link.id), link);
+      await setDoc(doc(db, 'links', link.id), sanitizeForFirestore(link));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `links/${link.id}`);
     }
@@ -597,7 +667,7 @@ export async function updateHomepageSections(config: HomepageSectionsConfig): Pr
   localStorage.setItem(STORAGE_KEYS.HOMEPAGE, JSON.stringify(config));
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'homepageSections', 'config'), config);
+      await setDoc(doc(db, 'homepageSections', 'config'), sanitizeForFirestore(config));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'homepageSections/config');
     }
@@ -640,8 +710,9 @@ export async function updateSettings(settings: SiteSettings): Promise<SiteSettin
   localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'siteSettings', 'general'), settings);
-      await setDoc(doc(db, 'settings', 'general'), settings);
+      const cleanSettings = sanitizeForFirestore(settings);
+      await setDoc(doc(db, 'siteSettings', 'general'), cleanSettings);
+      await setDoc(doc(db, 'settings', 'general'), cleanSettings);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'siteSettings/general');
     }
@@ -664,30 +735,30 @@ export async function seedInitialDataToFirestore(): Promise<{ postsCount: number
 
   // Seed Categories
   for (const cat of INITIAL_CATEGORIES) {
-    await setDoc(doc(db, 'categories', cat.id), cat);
+    await setDoc(doc(db, 'categories', cat.id), sanitizeForFirestore(cat));
   }
 
   // Seed Posts
   for (const post of INITIAL_POSTS) {
-    await setDoc(doc(db, 'posts', post.id), post);
+    await setDoc(doc(db, 'posts', post.id), sanitizeForFirestore(post));
   }
 
   // Seed Ads
   for (const ad of INITIAL_AD_SLOTS) {
-    await setDoc(doc(db, 'ads', ad.id || ad.slotKey), ad);
+    await setDoc(doc(db, 'ads', ad.id || ad.slotKey), sanitizeForFirestore(ad));
   }
 
   // Seed Links
   for (const link of INITIAL_IMPORTANT_LINKS) {
-    await setDoc(doc(db, 'links', link.id), link);
+    await setDoc(doc(db, 'links', link.id), sanitizeForFirestore(link));
   }
 
   // Seed Settings
-  await setDoc(doc(db, 'siteSettings', 'general'), INITIAL_SITE_SETTINGS);
-  await setDoc(doc(db, 'settings', 'general'), INITIAL_SITE_SETTINGS);
+  await setDoc(doc(db, 'siteSettings', 'general'), sanitizeForFirestore(INITIAL_SITE_SETTINGS));
+  await setDoc(doc(db, 'settings', 'general'), sanitizeForFirestore(INITIAL_SITE_SETTINGS));
 
   // Seed Homepage Sections
-  await setDoc(doc(db, 'homepageSections', 'config'), INITIAL_HOMEPAGE_SECTIONS);
+  await setDoc(doc(db, 'homepageSections', 'config'), sanitizeForFirestore(INITIAL_HOMEPAGE_SECTIONS));
 
   return {
     postsCount: INITIAL_POSTS.length,
@@ -752,10 +823,11 @@ export async function saveMediaLibrary(items: MediaLibraryItem[]): Promise<void>
 
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'settings', 'media_library'), {
+      const payload = sanitizeForFirestore({
         items,
         updatedAt: new Date().toISOString()
-      }, { merge: true });
+      });
+      await setDoc(doc(db, 'settings', 'media_library'), payload, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'settings/media_library');
     }

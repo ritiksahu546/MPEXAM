@@ -5,4 +5,4 @@ Allow: /
 Disallow: /admin
 Disallow: /reset-password
 
-Sitemap: https://mpexamupdate.in/sitemap.xml
+Sitemap: https://www.mpexamupdates.in/sitemap.xml

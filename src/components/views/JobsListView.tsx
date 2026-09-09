@@ -140,18 +140,18 @@ export const JobsListView: React.FC<Props> = ({
       <SEOHead
         title={`${activeCategoryObj ? activeCategoryObj.nameHindi : pageTitle} - MP Exam Update 2026`}
         description={activeCategoryObj?.description || `${pageTitle} - मध्य प्रदेश सरकारी भर्ती, परीक्षा, प्रवेश पत्र, रिजल्ट एवं उत्तर कुंजी की नवीनतम सूची।`}
-        canonicalUrl={`https://mpexamupdate.in/${activeCategoryObj ? `category/${activeCategoryObj.slug}` : (initialPostType ? (initialPostType === 'job' ? 'jobs' : initialPostType === 'admit_card' ? 'admit-cards' : initialPostType === 'result' ? 'results' : initialPostType === 'answer_key' ? 'answer-keys' : initialPostType) : 'jobs')}`}
+        canonicalUrl={`https://www.mpexamupdates.in/${activeCategoryObj ? `category/${activeCategoryObj.slug}` : (initialPostType ? (initialPostType === 'job' ? 'jobs' : initialPostType === 'admit_card' ? 'admit-cards' : initialPostType === 'result' ? 'results' : initialPostType === 'answer_key' ? 'answer-keys' : initialPostType) : 'jobs')}`}
         ogType="website"
         breadcrumbs={
           activeCategoryObj
             ? [
-                { name: 'होम', item: 'https://mpexamupdate.in/' },
-                { name: 'श्रेणियां', item: 'https://mpexamupdate.in/categories' },
-                { name: activeCategoryObj.nameHindi, item: `https://mpexamupdate.in/category/${activeCategoryObj.slug}` }
+                { name: 'होम', item: 'https://www.mpexamupdates.in/' },
+                { name: 'श्रेणियां', item: 'https://www.mpexamupdates.in/categories' },
+                { name: activeCategoryObj.nameHindi, item: `https://www.mpexamupdates.in/category/${activeCategoryObj.slug}` }
               ]
             : [
-                { name: 'होम', item: 'https://mpexamupdate.in/' },
-                { name: pageTitle, item: `https://mpexamupdate.in/${initialPostType ? (initialPostType === 'job' ? 'jobs' : initialPostType === 'admit_card' ? 'admit-cards' : initialPostType === 'result' ? 'results' : initialPostType === 'answer_key' ? 'answer-keys' : initialPostType) : 'jobs'}` }
+                { name: 'होम', item: 'https://www.mpexamupdates.in/' },
+                { name: pageTitle, item: `https://www.mpexamupdates.in/${initialPostType ? (initialPostType === 'job' ? 'jobs' : initialPostType === 'admit_card' ? 'admit-cards' : initialPostType === 'result' ? 'results' : initialPostType === 'answer_key' ? 'answer-keys' : initialPostType) : 'jobs'}` }
               ]
         }
       />
