@@ -1,7 +1,7 @@
 import React from 'react';
 import { Breadcrumbs } from '../common/Breadcrumbs';
 import { SiteSettings } from '../../types';
-import { ShieldCheck, Mail, Send, MessageCircle, AlertTriangle, FileText, Sparkles, Building } from 'lucide-react';
+import { ShieldCheck, Mail, Send, MessageCircle, Phone, AlertTriangle, FileText, Sparkles, Building } from 'lucide-react';
 
 interface Props {
   pageType: 'about' | 'contact' | 'privacy-policy' | 'terms-and-conditions' | 'disclaimer' | 'advertisement';
@@ -10,6 +10,11 @@ interface Props {
 }
 
 export const StaticPageView: React.FC<Props> = ({ pageType, settings, onNavigate }) => {
+  const telegramUrl = settings.socialLinks?.telegram || settings.telegramLink;
+  const whatsappUrl = settings.socialLinks?.whatsapp || settings.whatsappLink;
+  const youtubeUrl = settings.socialLinks?.youtube || settings.youtubeLink;
+  const facebookUrl = settings.socialLinks?.facebook || settings.facebookLink;
+
   const pageData = {
     about: {
       title: 'हमारे बारे में (About Us)',
@@ -42,26 +47,54 @@ export const StaticPageView: React.FC<Props> = ({ pageType, settings, onNavigate
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start gap-3">
-              <Mail className="w-5 h-5 text-blue-700 mt-0.5" />
+              <Mail className="w-5 h-5 text-blue-700 mt-0.5 shrink-0" />
               <div>
                 <strong className="block text-slate-900 font-bold">आधिकारिक ई-मेल</strong>
-                <a href={`mailto:${settings.contactEmail}`} className="text-blue-700 hover:underline text-xs sm:text-sm">
+                <a href={`mailto:${settings.contactEmail}`} className="text-blue-700 hover:underline text-xs sm:text-sm break-all">
                   {settings.contactEmail}
                 </a>
                 <p className="text-xs text-slate-500 mt-0.5">24 से 48 घंटे के भीतर प्रत्युत्तर दिया जाता है</p>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start gap-3">
-              <Send className="w-5 h-5 text-sky-600 mt-0.5" />
-              <div>
-                <strong className="block text-slate-900 font-bold">टेलीग्राम हेल्पलाइन</strong>
-                <a href={settings.telegramLink} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline text-xs sm:text-sm">
-                  @mpexamupdate_official
-                </a>
-                <p className="text-xs text-slate-500 mt-0.5">ताज़ा अलर्ट व चर्चा के लिए जुड़े</p>
+            {telegramUrl && (
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start gap-3">
+                <Send className="w-5 h-5 text-sky-600 mt-0.5 shrink-0" />
+                <div>
+                  <strong className="block text-slate-900 font-bold">टेलीग्राम हेल्पलाइन</strong>
+                  <a href={telegramUrl} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline text-xs sm:text-sm">
+                    टेलीग्राम चैनल से जुड़ें
+                  </a>
+                  <p className="text-xs text-slate-500 mt-0.5">ताज़ा अलर्ट व चर्चा के लिए जुड़े</p>
+                </div>
               </div>
-            </div>
+            )}
+
+            {whatsappUrl && (
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start gap-3">
+                <MessageCircle className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+                <div>
+                  <strong className="block text-slate-900 font-bold">व्हाट्सएप चैनल</strong>
+                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline text-xs sm:text-sm">
+                    व्हाट्सएप चैनल से जुड़ें
+                  </a>
+                  <p className="text-xs text-slate-500 mt-0.5">परीक्षा एवं परिणाम सूचनाएं</p>
+                </div>
+              </div>
+            )}
+
+            {settings.contactPhone && (
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start gap-3">
+                <Phone className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <strong className="block text-slate-900 font-bold">हेल्पलाइन नंबर</strong>
+                  <a href={`tel:${settings.contactPhone}`} className="text-amber-700 hover:underline text-xs sm:text-sm">
+                    {settings.contactPhone}
+                  </a>
+                  <p className="text-xs text-slate-500 mt-0.5">सोमवार से शनिवार: 10 AM - 5 PM</p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/50">

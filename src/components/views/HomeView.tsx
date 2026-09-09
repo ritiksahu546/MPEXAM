@@ -5,6 +5,7 @@ import { JobCard } from '../cards/JobCard';
 import { CategoryPill } from '../cards/CategoryPill';
 import { AdSlot } from '../common/AdSlot';
 import { SEOHead } from '../common/SEOHead';
+import { findAdSlot } from '../../utils/adSlots';
 import { 
   Sparkles, 
   Flame, 
@@ -57,7 +58,7 @@ export const HomeView: React.FC<Props> = ({
   const teacherPosts = publishedPosts.filter(p => p.categoryId === 'teacher-jobs' || p.organization.includes('शिक्षक'));
   const calendarPosts = publishedPosts.slice(0, 5);
 
-  const getAd = (key: string) => adSlots.find(a => a.slotKey === key);
+  const getAd = (key: string) => findAdSlot(adSlots, key);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -88,12 +89,12 @@ export const HomeView: React.FC<Props> = ({
                 onClick={() => onNavigate('categories')}
                 className="text-xs font-bold text-blue-700 hover:underline flex items-center gap-0.5"
               >
-                <span>सभी 15 श्रेणियां</span>
+                <span>सभी श्रेणियां</span>
                 <ChevronRight className="w-3 h-3" />
               </button>
             </div>
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {categories.slice(0, 10).map((cat) => (
+              {categories.filter(c => c.active !== false).slice(0, 12).map((cat) => (
                 <CategoryPill
                   key={cat.id}
                   category={cat}

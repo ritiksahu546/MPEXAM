@@ -43,7 +43,8 @@ const STORAGE_KEYS = {
   ADS: 'mp_exam_ads_v2',
   LINKS: 'mp_exam_links_v2',
   SETTINGS: 'mp_exam_settings_v2',
-  HOMEPAGE: 'mp_exam_homepage_v2'
+  HOMEPAGE: 'mp_exam_homepage_v2',
+  MEDIA_LIBRARY: 'mp_exam_media_library_v1'
 };
 
 export const INITIAL_HOMEPAGE_SECTIONS: HomepageSectionsConfig = {
@@ -118,23 +119,13 @@ export async function getPosts(): Promise<Post[]> {
       }
       return firestorePosts;
     } catch (error) {
-      console.warn('Firestore published posts fetch error:', error);
-      // Fallback only to previously fetched real posts if available in localStorage
-      const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const publishedFallback = parsed.filter((p: Post) => p.status === 'published');
-            return publishedFallback;
-          }
-        } catch {}
-      }
-      return [];
+      console.error('Firestore published posts fetch error:', error);
+      // Propagate Firestore load failure so App can display DataErrorState instead of silently showing empty arrays
+      throw error;
     }
   }
 
-  // Fallback to real cached posts if offline, never fake demo posts
+  // Fallback to real cached posts if offline and Firebase is unconfigured, never fake demo posts
   const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
   if (stored) {
     try {
@@ -171,15 +162,9 @@ export async function getAllPostsForAdmin(): Promise<Post[]> {
       } catch {}
       return firestorePosts;
     } catch (error) {
-      console.warn('Firestore admin posts fetch error:', error);
-      const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) return parsed;
-        } catch {}
-      }
-      return [];
+      console.error('Firestore admin posts fetch error:', error);
+      // Propagate Firestore load failure
+      throw error;
     }
   }
 
@@ -337,15 +322,8 @@ export async function getCategories(): Promise<Category[]> {
       } catch {}
       return firestoreCats;
     } catch (error) {
-      console.warn('Categories Firestore read notice:', error);
-      const stored = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) return parsed;
-        } catch {}
-      }
-      return [];
+      console.error('Categories Firestore read notice:', error);
+      throw error;
     }
   }
 
@@ -368,6 +346,7 @@ export async function saveCategory(category: Category): Promise<Category> {
     categories.push(category);
   }
   localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+  invalidateCache();
 
   if (isFirebaseConfigured && db) {
     try {
@@ -383,6 +362,7 @@ export async function deleteCategory(categoryId: string): Promise<void> {
   const categories = await getCategories();
   const filtered = categories.filter(c => c.id !== categoryId);
   localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(filtered));
+  invalidateCache();
 
   if (isFirebaseConfigured && db) {
     try {
@@ -407,15 +387,8 @@ export async function getTags(): Promise<Tag[]> {
       } catch {}
       return firestoreTags;
     } catch (error) {
-      console.warn('Tags fetch notice:', error);
-      const stored = localStorage.getItem(STORAGE_KEYS.TAGS);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) return parsed;
-        } catch {}
-      }
-      return [];
+      console.error('Tags Firestore read error:', error);
+      throw error;
     }
   }
 
@@ -477,15 +450,8 @@ export async function getAdSlots(): Promise<AdSlotConfig[]> {
       } catch {}
       return firestoreAds;
     } catch (error) {
-      console.warn('Ad slots read notice:', error);
-      const stored = localStorage.getItem(STORAGE_KEYS.ADS);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) return parsed;
-        } catch {}
-      }
-      return [];
+      console.error('Ad slots Firestore read error:', error);
+      throw error;
     }
   }
   const stored = localStorage.getItem(STORAGE_KEYS.ADS);
@@ -553,15 +519,8 @@ export async function getImportantLinks(): Promise<ImportantLink[]> {
       } catch {}
       return firestoreLinks;
     } catch (error) {
-      console.warn('Links read notice:', error);
-      const stored = localStorage.getItem(STORAGE_KEYS.LINKS);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) return parsed;
-        } catch {}
-      }
-      return [];
+      console.error('Important links Firestore read error:', error);
+      throw error;
     }
   }
   const stored = localStorage.getItem(STORAGE_KEYS.LINKS);
@@ -621,8 +580,12 @@ export async function getHomepageSections(): Promise<HomepageSectionsConfig> {
         localStorage.setItem(STORAGE_KEYS.HOMEPAGE, JSON.stringify(data));
         return data;
       }
+      // Document does not exist yet in Firestore (initial setup) -> return default
+      const stored = localStorage.getItem(STORAGE_KEYS.HOMEPAGE);
+      return stored ? JSON.parse(stored) : INITIAL_HOMEPAGE_SECTIONS;
     } catch (error) {
-      console.warn('Homepage sections read notice:', error);
+      console.error('Homepage sections Firestore read error:', error);
+      throw error;
     }
   }
 
@@ -661,8 +624,12 @@ export async function getSettings(): Promise<SiteSettings> {
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(data));
         return data;
       }
+      // Document does not exist yet in Firestore (initial setup) -> return default
+      const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      return stored ? JSON.parse(stored) : INITIAL_SITE_SETTINGS;
     } catch (error) {
-      console.warn('Settings read notice:', error);
+      console.error('Settings Firestore read error:', error);
+      throw error;
     }
   }
   const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -736,4 +703,61 @@ export function resetToSampleData(): void {
   localStorage.setItem(STORAGE_KEYS.LINKS, JSON.stringify(INITIAL_IMPORTANT_LINKS));
   localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(INITIAL_SITE_SETTINGS));
   localStorage.setItem(STORAGE_KEYS.HOMEPAGE, JSON.stringify(INITIAL_HOMEPAGE_SECTIONS));
+}
+
+// ==========================================
+// 9. MEDIA LIBRARY API (Firestore-backed)
+// ==========================================
+
+export interface MediaLibraryItem {
+  id: string;
+  url: string;
+  storagePath?: string;
+  name: string;
+  type: 'image' | 'pdf';
+  uploadedAt: string;
+}
+
+export async function getMediaLibrary(): Promise<MediaLibraryItem[]> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'media_library'));
+      if (snap.exists()) {
+        const data = snap.data();
+        const items = Array.isArray(data?.items) ? (data.items as MediaLibraryItem[]) : [];
+        try {
+          localStorage.setItem(STORAGE_KEYS.MEDIA_LIBRARY, JSON.stringify(items));
+        } catch {}
+        return items;
+      }
+    } catch (error) {
+      console.error('Media library Firestore read notice:', error);
+    }
+  }
+
+  const stored = localStorage.getItem(STORAGE_KEYS.MEDIA_LIBRARY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
+}
+
+export async function saveMediaLibrary(items: MediaLibraryItem[]): Promise<void> {
+  try {
+    localStorage.setItem(STORAGE_KEYS.MEDIA_LIBRARY, JSON.stringify(items));
+  } catch {}
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, 'settings', 'media_library'), {
+        items,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'settings/media_library');
+    }
+  }
 }

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Private admin & auth areas
+Disallow: /admin
+Disallow: /reset-password
+
+Sitemap: https://mpexamupdate.in/sitemap.xml

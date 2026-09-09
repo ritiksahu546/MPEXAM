@@ -21,7 +21,27 @@ interface Props {
 }
 
 export const SettingsManager: React.FC<Props> = ({ settings, onSaveSettings, onSeedData }) => {
-  const [formData, setFormData] = useState<SiteSettings>(settings);
+  const [formData, setFormData] = useState<SiteSettings>(() => {
+    return {
+      ...settings,
+      logoUrl: settings.logoUrl || settings.logo || '',
+      logo: settings.logo || settings.logoUrl || '',
+      faviconUrl: settings.faviconUrl || settings.favicon || '',
+      favicon: settings.favicon || settings.faviconUrl || '',
+      siteDescription: settings.siteDescription || settings.description || '',
+      description: settings.description || settings.siteDescription || '',
+      googleAdsenseClientId: settings.googleAdsenseClientId || settings.adSensePublisherId || '',
+      adSensePublisherId: settings.adSensePublisherId || settings.googleAdsenseClientId || '',
+      googleSearchConsoleVerification: settings.googleSearchConsoleVerification || settings.searchConsoleCode || '',
+      searchConsoleCode: settings.searchConsoleCode || settings.googleSearchConsoleVerification || '',
+      socialLinks: {
+        whatsapp: settings.socialLinks?.whatsapp || settings.whatsappLink || '',
+        telegram: settings.socialLinks?.telegram || settings.telegramLink || '',
+        youtube: settings.socialLinks?.youtube || settings.youtubeLink || '',
+        facebook: settings.socialLinks?.facebook || settings.facebookLink || ''
+      }
+    };
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -31,7 +51,37 @@ export const SettingsManager: React.FC<Props> = ({ settings, onSaveSettings, onS
     setIsSaving(true);
     setSuccessMsg('');
     try {
-      await onSaveSettings(formData);
+      const whatsapp = formData.socialLinks?.whatsapp || formData.whatsappLink || '';
+      const telegram = formData.socialLinks?.telegram || formData.telegramLink || '';
+      const youtube = formData.socialLinks?.youtube || formData.youtubeLink || '';
+      const facebook = formData.socialLinks?.facebook || formData.facebookLink || '';
+
+      const normalizedSettings: SiteSettings = {
+        ...formData,
+        logo: formData.logoUrl || formData.logo || '',
+        logoUrl: formData.logoUrl || formData.logo || '',
+        favicon: formData.faviconUrl || formData.favicon || '',
+        faviconUrl: formData.faviconUrl || formData.favicon || '',
+        description: formData.siteDescription || formData.description || '',
+        siteDescription: formData.siteDescription || formData.description || '',
+        whatsappLink: whatsapp,
+        telegramLink: telegram,
+        youtubeLink: youtube,
+        facebookLink: facebook,
+        socialLinks: {
+          whatsapp,
+          telegram,
+          youtube,
+          facebook
+        },
+        adSensePublisherId: formData.googleAdsenseClientId || formData.adSensePublisherId || '',
+        googleAdsenseClientId: formData.googleAdsenseClientId || formData.adSensePublisherId || '',
+        searchConsoleCode: formData.googleSearchConsoleVerification || formData.searchConsoleCode || '',
+        googleSearchConsoleVerification: formData.googleSearchConsoleVerification || formData.searchConsoleCode || ''
+      };
+
+      await onSaveSettings(normalizedSettings);
+      setFormData(normalizedSettings);
       setSuccessMsg('साइट सेटिंग्स सफलतापूर्वक सहेजी गईं!');
       setTimeout(() => setSuccessMsg(''), 3500);
     } catch (err: any) {

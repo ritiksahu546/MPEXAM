@@ -51,6 +51,7 @@ import { ResetPasswordView } from './components/admin/ResetPasswordView';
 import { LoadingSkeleton } from './components/common/LoadingSkeleton';
 import { DataErrorState } from './components/common/DataErrorState';
 import { INITIAL_SITE_SETTINGS } from './data/initialData';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 /**
  * Extracts Firebase password reset action code (oobCode) from either URL search parameters or hash.
@@ -93,7 +94,9 @@ export default function App() {
   const [settings, setSettings] = useState<SiteSettings>(INITIAL_SITE_SETTINGS);
   const [homepageSections, setHomepageSections] = useState<HomepageSectionsConfig>(INITIAL_HOMEPAGE_SECTIONS);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [currentRoute, setCurrentRoute] = useState<string>('home');
+  const location = useLocation();
+  const routerNavigate = useNavigate();
+
   const [resetCode, setResetCode] = useState<string>('');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -177,31 +180,54 @@ export default function App() {
     }
   }, [refreshData]);
 
-  // URL & Hash Sync for routing (supports Firebase Auth Password Reset action codes)
+  // Compute canonical path-based route from browser location
+  const currentRoute = useMemo(() => {
+    const rawPath = location.pathname.replace(/^\//, '');
+    const cleanPath = rawPath.split('?')[0];
+    return cleanPath || 'home';
+  }, [location.pathname]);
+
+  // Backward Compatibility: Automatically redirect legacy hash URLs to proper clean paths
   useEffect(() => {
-    const handleRouteChange = () => {
-      // 1. First inspect if the incoming URL is a Firebase Auth action code / password reset
-      const oobCode = extractPasswordResetCode();
-      if (oobCode) {
-        setResetCode(oobCode);
-        setCurrentRoute('reset-password');
-        return;
+    const handleHashMigration = () => {
+      const hash = window.location.hash;
+      if (!hash) return;
+
+      const clean = hash.replace(/^#\/?/, '');
+      if (!clean) return;
+
+      // Avoid redirect loops if hash is empty or already matches path
+      if (clean.startsWith('job/')) {
+        const slug = clean.replace(/^job\//, '');
+        routerNavigate(`/job/${slug}`, { replace: true });
+      } else if (clean.startsWith('post/')) {
+        const slug = clean.replace(/^post\//, '');
+        routerNavigate(`/job/${slug}`, { replace: true });
+      } else if (clean.startsWith('category/')) {
+        const slug = clean.replace(/^category\//, '');
+        routerNavigate(`/category/${slug}`, { replace: true });
+      } else if (['jobs', 'admit-cards', 'results', 'answer-keys', 'categories', 'admin', 'about', 'contact', 'privacy-policy', 'terms-and-conditions', 'disclaimer', 'advertisement', 'sitemap', 'search'].includes(clean.split('?')[0])) {
+        routerNavigate(`/${clean}`, { replace: true });
+      } else if (clean === 'home' || clean === '') {
+        routerNavigate('/', { replace: true });
       }
-
-      // 2. Otherwise handle standard hash routing
-      const rawHash = window.location.hash.replace('#', '') || 'home';
-      const cleanHash = rawHash.split('?')[0];
-      setCurrentRoute(cleanHash || 'home');
     };
 
-    handleRouteChange();
-    window.addEventListener('hashchange', handleRouteChange);
-    window.addEventListener('popstate', handleRouteChange);
-    return () => {
-      window.removeEventListener('hashchange', handleRouteChange);
-      window.removeEventListener('popstate', handleRouteChange);
-    };
-  }, []);
+    handleHashMigration();
+    window.addEventListener('hashchange', handleHashMigration);
+    return () => window.removeEventListener('hashchange', handleHashMigration);
+  }, [routerNavigate]);
+
+  // Sync Firebase Auth Password Reset action code from URL (search params or hash)
+  useEffect(() => {
+    const oobCode = extractPasswordResetCode();
+    if (oobCode) {
+      setResetCode(oobCode);
+      if (location.pathname !== '/reset-password') {
+        routerNavigate('/reset-password', { replace: true });
+      }
+    }
+  }, [location.pathname, routerNavigate]);
 
   // Keyboard shortcut Ctrl+K / Cmd+K for search
   useEffect(() => {
@@ -215,16 +241,112 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const navigate = (route: string) => {
-    window.location.hash = route;
-    setCurrentRoute(route);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  // Sync Dynamic Site Settings to Document Head (Favicon, Google Analytics, AdSense, Search Console)
+  useEffect(() => {
+    // 1. Favicon sync
+    const faviconUrl = settings.faviconUrl || settings.favicon;
+    if (faviconUrl) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = faviconUrl;
+    }
 
-  const handleSelectPost = (slug: string) => {
+    // Helper validators to avoid injecting fake/demo IDs
+    const isValidGoogleAnalyticsId = (id?: string): boolean => {
+      if (!id) return false;
+      const clean = id.trim();
+      if (!clean || clean === 'G-MPEXAM2026' || clean.includes('0000000') || clean.includes('XXXXX')) return false;
+      return /^G-[A-Z0-9]{4,15}$/i.test(clean);
+    };
+
+    const isValidAdSenseId = (id?: string): boolean => {
+      if (!id) return false;
+      const clean = id.trim();
+      if (!clean || clean === 'ca-pub-0000000000000000' || clean.includes('0000000000000000') || clean.includes('XXXXXXXX')) return false;
+      const digits = clean.replace(/[^0-9]/g, '');
+      return digits.length === 16 && !/^0+$/.test(digits);
+    };
+
+    const isValidSearchConsoleCode = (code?: string): boolean => {
+      if (!code) return false;
+      const clean = code.trim();
+      if (!clean || clean === 'google-site-verification-mp-exam-update' || clean.includes('XXXXXXXX')) return false;
+      return clean.length >= 8;
+    };
+
+    // 2. Google Search Console Verification (only if real verification code configured)
+    const gscCode = settings.googleSearchConsoleVerification || settings.searchConsoleCode;
+    if (isValidSearchConsoleCode(gscCode)) {
+      let meta = document.querySelector("meta[name='google-site-verification']") as HTMLMetaElement | null;
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'google-site-verification';
+        document.head.appendChild(meta);
+      }
+      meta.content = gscCode!.trim();
+    }
+
+    // 3. Google Analytics (gtag.js) - only if real production GA4 ID configured
+    if (isValidGoogleAnalyticsId(settings.googleAnalyticsId)) {
+      const gaId = settings.googleAnalyticsId!.trim();
+      const scriptId = 'ga-gtag-script';
+      if (!document.getElementById(scriptId)) {
+        const gaScript = document.createElement('script');
+        gaScript.id = scriptId;
+        gaScript.async = true;
+        gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+        document.head.appendChild(gaScript);
+
+        const inlineScript = document.createElement('script');
+        inlineScript.id = 'ga-gtag-init';
+        inlineScript.innerHTML = `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${gaId}');
+        `;
+        document.head.appendChild(inlineScript);
+      }
+    }
+
+    // 4. Google AdSense auto-ads script - only if real 16-digit publisher ID configured
+    const adsenseClient = settings.googleAdsenseClientId || settings.adSensePublisherId;
+    if (isValidAdSenseId(adsenseClient)) {
+      const scriptId = 'google-adsense-script';
+      if (!document.getElementById(scriptId)) {
+        const adsenseScript = document.createElement('script');
+        adsenseScript.id = scriptId;
+        adsenseScript.async = true;
+        adsenseScript.crossOrigin = 'anonymous';
+        const formattedClient = adsenseClient!.trim().startsWith('ca-pub-') 
+          ? adsenseClient!.trim() 
+          : `ca-pub-${adsenseClient!.trim().replace(/^pub-/, '')}`;
+        adsenseScript.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${formattedClient}`;
+        document.head.appendChild(adsenseScript);
+      }
+    }
+  }, [settings]);
+
+  // Standardized path-based navigation handler for all child views
+  const navigate = useCallback((route: string) => {
+    let target = route.trim();
+    if (target === 'home' || target === '') {
+      target = '/';
+    } else if (!target.startsWith('/')) {
+      target = '/' + target;
+    }
+    routerNavigate(target);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [routerNavigate]);
+
+  const handleSelectPost = useCallback((slug: string) => {
     incrementPostViews(slug);
-    navigate(`job/${slug}`);
-  };
+    navigate(`/job/${slug}`);
+  }, [navigate]);
 
   // Only published posts for public view (Requirement #7)
   const publishedPosts = useMemo(() => {
@@ -288,7 +410,15 @@ export default function App() {
 
   const handleUpdateAdSlot = async (slot: AdSlotConfig) => {
     await updateAdSlot(slot);
-    setAdSlots(prev => prev.map(s => s.slotKey === slot.slotKey ? slot : s));
+    setAdSlots(prev => {
+      const idx = prev.findIndex(s => (s.slotKey && s.slotKey === slot.slotKey) || (s.id && s.id === slot.id));
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = slot;
+        return next;
+      }
+      return [...prev, slot];
+    });
   };
 
   const handleSaveImportantLink = async (link: ImportantLink) => {
@@ -421,8 +551,8 @@ export default function App() {
       return <LoadingSkeleton />;
     }
 
-    // 4. Error State: If data failed to load and no posts exist
-    if (dataError && posts.length === 0) {
+    // 4. Error State: If Firestore or data load failed, display DataErrorState with retry option
+    if (dataError) {
       return (
         <DataErrorState
           message={dataError}
@@ -560,6 +690,24 @@ export default function App() {
       );
     }
 
+    // 7b. Dedicated Tag Pages (/tag/:slug or /tag/:name)
+    if (currentRoute.startsWith('tag/')) {
+      const rawTag = decodeURIComponent(currentRoute.replace('tag/', ''));
+      const matchedTag = tags.find(t => t.slug.toLowerCase() === rawTag.toLowerCase() || t.name.toLowerCase() === rawTag.toLowerCase());
+      const displayTagName = matchedTag ? matchedTag.name : rawTag;
+      return (
+        <JobsListView
+          posts={publishedPosts}
+          categories={categories}
+          adSlots={adSlots}
+          initialTag={displayTagName}
+          pageTitle={`#${displayTagName} - संबंधित सरकारी नौकरियां एवं परीक्षा अपडेट`}
+          onNavigate={navigate}
+          onSelectPost={handleSelectPost}
+        />
+      );
+    }
+
     // 8. Categories Hub
     if (currentRoute === 'categories') {
       return (
@@ -568,6 +716,22 @@ export default function App() {
           categories={categories}
           adSlots={adSlots}
           pageTitle="समस्त श्रेणियां एवं विभाग (All MP Recruitment Categories)"
+          onNavigate={navigate}
+          onSelectPost={handleSelectPost}
+        />
+      );
+    }
+
+    // 8b. Search Page (/search)
+    if (currentRoute === 'search') {
+      const searchParams = new URLSearchParams(location.search);
+      const queryParam = searchParams.get('q') || '';
+      return (
+        <JobsListView
+          posts={publishedPosts}
+          categories={categories}
+          adSlots={adSlots}
+          pageTitle={queryParam ? `खोज परिणाम: "${queryParam}"` : "समस्त सरकारी नौकरियां एवं खोज"}
           onNavigate={navigate}
           onSelectPost={handleSelectPost}
         />
@@ -656,6 +820,7 @@ export default function App() {
       <Footer
         settings={settings}
         categories={categories}
+        importantLinks={importantLinks}
         onNavigate={navigate}
       />
 

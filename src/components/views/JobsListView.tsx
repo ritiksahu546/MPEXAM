@@ -4,6 +4,7 @@ import { JobCard } from '../cards/JobCard';
 import { AdSlot } from '../common/AdSlot';
 import { Breadcrumbs } from '../common/Breadcrumbs';
 import { SEOHead } from '../common/SEOHead';
+import { findAdSlot } from '../../utils/adSlots';
 import { 
   Filter, 
   RotateCcw, 
@@ -13,7 +14,8 @@ import {
   GraduationCap, 
   SlidersHorizontal,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Tag as TagIcon
 } from 'lucide-react';
 
 interface Props {
@@ -22,6 +24,7 @@ interface Props {
   adSlots: AdSlotConfig[];
   initialCategorySlug?: string;
   initialPostType?: string;
+  initialTag?: string;
   pageTitle?: string;
   onNavigate: (route: string) => void;
   onSelectPost: (slug: string) => void;
@@ -35,6 +38,7 @@ export const JobsListView: React.FC<Props> = ({
   adSlots,
   initialCategorySlug,
   initialPostType,
+  initialTag,
   pageTitle = 'मध्य प्रदेश सरकारी नौकरियां एवं परीक्षा अपडेट 2026',
   onNavigate,
   onSelectPost
@@ -42,6 +46,7 @@ export const JobsListView: React.FC<Props> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategorySlug || 'all');
   const [selectedType, setSelectedType] = useState<string>(initialPostType || 'all');
   const [selectedQualification, setSelectedQualification] = useState<string>('all');
+  const [selectedTag, setSelectedTag] = useState<string>(initialTag || 'all');
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'closing_soon' | 'most_viewed'>('latest');
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -77,6 +82,12 @@ export const JobsListView: React.FC<Props> = ({
         if (selectedQualification === '12th' && !q.includes('12th') && !q.includes('12वीं')) return false;
         if (selectedQualification === 'graduate' && !q.includes('graduat') && !q.includes('स्नातक')) return false;
       }
+      // Tag filter
+      if (selectedTag && selectedTag !== 'all') {
+        const normTag = selectedTag.toLowerCase().trim();
+        const tagMatches = post.tags?.some(t => t.toLowerCase().trim() === normTag);
+        if (!tagMatches) return false;
+      }
       // Text search
       if (searchFilter.trim() !== '') {
         const term = searchFilter.toLowerCase();
@@ -88,7 +99,7 @@ export const JobsListView: React.FC<Props> = ({
       }
       return true;
     });
-  }, [posts, selectedCategory, selectedType, selectedQualification, searchFilter]);
+  }, [posts, selectedCategory, selectedType, selectedQualification, selectedTag, searchFilter, activeCategoryObj]);
 
   // Sort posts
   const sortedPosts = useMemo(() => {
@@ -114,12 +125,13 @@ export const JobsListView: React.FC<Props> = ({
     setSelectedCategory('all');
     setSelectedType('all');
     setSelectedQualification('all');
+    setSelectedTag('all');
     setSearchFilter('');
     setSortBy('latest');
     setCurrentPage(1);
   };
 
-  const getAd = (key: string) => adSlots.find(a => a.slotKey === key);
+  const getAd = (key: string) => findAdSlot(adSlots, key);
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-6">
@@ -128,18 +140,18 @@ export const JobsListView: React.FC<Props> = ({
       <SEOHead
         title={`${activeCategoryObj ? activeCategoryObj.nameHindi : pageTitle} - MP Exam Update 2026`}
         description={activeCategoryObj?.description || `${pageTitle} - मध्य प्रदेश सरकारी भर्ती, परीक्षा, प्रवेश पत्र, रिजल्ट एवं उत्तर कुंजी की नवीनतम सूची।`}
-        canonicalUrl={`https://mpexamupdate.in/#${activeCategoryObj ? `category/${activeCategoryObj.slug}` : (initialPostType || 'jobs')}`}
+        canonicalUrl={`https://mpexamupdate.in/${activeCategoryObj ? `category/${activeCategoryObj.slug}` : (initialPostType ? (initialPostType === 'job' ? 'jobs' : initialPostType === 'admit_card' ? 'admit-cards' : initialPostType === 'result' ? 'results' : initialPostType === 'answer_key' ? 'answer-keys' : initialPostType) : 'jobs')}`}
         ogType="website"
         breadcrumbs={
           activeCategoryObj
             ? [
                 { name: 'होम', item: 'https://mpexamupdate.in/' },
-                { name: 'श्रेणियां', item: 'https://mpexamupdate.in/#categories' },
-                { name: activeCategoryObj.nameHindi, item: `https://mpexamupdate.in/#category/${activeCategoryObj.slug}` }
+                { name: 'श्रेणियां', item: 'https://mpexamupdate.in/categories' },
+                { name: activeCategoryObj.nameHindi, item: `https://mpexamupdate.in/category/${activeCategoryObj.slug}` }
               ]
             : [
                 { name: 'होम', item: 'https://mpexamupdate.in/' },
-                { name: pageTitle, item: `https://mpexamupdate.in/#${initialPostType || 'jobs'}` }
+                { name: pageTitle, item: `https://mpexamupdate.in/${initialPostType ? (initialPostType === 'job' ? 'jobs' : initialPostType === 'admit_card' ? 'admit-cards' : initialPostType === 'result' ? 'results' : initialPostType === 'answer_key' ? 'answer-keys' : initialPostType) : 'jobs'}` }
               ]
         }
       />
@@ -239,7 +251,7 @@ export const JobsListView: React.FC<Props> = ({
                 className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-blue-600"
               >
                 <option value="all">सभी श्रेणियां (All Categories)</option>
-                {categories.map((cat) => (
+                {categories.filter(c => c.active !== false).map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.nameHindi} ({cat.nameEnglish})
                   </option>
@@ -331,6 +343,25 @@ export const JobsListView: React.FC<Props> = ({
               </button>
             </div>
           </div>
+
+          {/* Active Tag Banner */}
+          {selectedTag !== 'all' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between gap-2 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <TagIcon className="w-4 h-4 text-blue-700 shrink-0" />
+                <span className="text-xs font-bold text-blue-900">
+                  सक्रिय टैग फ़िल्टर: <span className="underline">#{selectedTag}</span>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTag('all')}
+                className="px-2.5 py-1 bg-white hover:bg-red-50 text-red-700 hover:text-red-800 border border-red-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+              >
+                टैग हटाएं ×
+              </button>
+            </div>
+          )}
 
           {/* Posts Grid */}
           {paginatedPosts.length === 0 ? (

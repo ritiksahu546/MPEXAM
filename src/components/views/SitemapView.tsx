@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Post, Category } from '../../types';
 import { Breadcrumbs } from '../common/Breadcrumbs';
-import { Copy, Check, Download, Globe, FileCode, CheckCircle2 } from 'lucide-react';
+import { Copy, Check, Download, Globe } from 'lucide-react';
+import { generateSitemapXml, generateRobotsTxt, DEFAULT_BASE_URL } from '../../utils/sitemapGenerator';
 
 interface Props {
   posts: Post[];
@@ -13,69 +14,16 @@ export const SitemapView: React.FC<Props> = ({ posts, categories, onNavigate }) 
   const [activeTab, setActiveTab] = useState<'sitemap' | 'robots'>('sitemap');
   const [copied, setCopied] = useState(false);
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://mpexamupdate.in';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : DEFAULT_BASE_URL;
 
-  // Generate XML sitemap string
-  const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Core Static Pages -->
-  <url>
-    <loc>${baseUrl}/</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-    <changefreq>hourly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#jobs</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#admit-cards</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#results</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#answer-keys</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
+  // Generate XML sitemap string using shared utility
+  const sitemapXml = useMemo(() => {
+    return generateSitemapXml(posts, categories, baseUrl);
+  }, [posts, categories, baseUrl]);
 
-  <!-- Categories -->
-${categories.map(c => `  <url>
-    <loc>${baseUrl}/#category/${c.slug}</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>`).join('\n')}
-
-  <!-- Published Posts & Jobs -->
-${posts.filter(p => p.status === 'published').map(p => `  <url>
-    <loc>${baseUrl}/#job/${p.slug}</loc>
-    <lastmod>${(p.updatedAt || p.createdAt).split('T')[0]}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>`).join('\n')}
-</urlset>`;
-
-  const robotsTxt = `# robots.txt for MP Exam Update Portal
-User-agent: *
-Allow: /
-Disallow: /#admin
-
-# Google & Bing Crawlers
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-Sitemap: ${baseUrl}/sitemap.xml
-`;
+  const robotsTxt = useMemo(() => {
+    return generateRobotsTxt(baseUrl);
+  }, [baseUrl]);
 
   const currentContent = activeTab === 'sitemap' ? sitemapXml : robotsTxt;
 

@@ -6,6 +6,7 @@ import { Disclaimer } from '../common/Disclaimer';
 import { ShareButtons } from '../common/ShareButtons';
 import { AdSlot } from '../common/AdSlot';
 import { SEOHead } from '../common/SEOHead';
+import { findAdSlot } from '../../utils/adSlots';
 import { 
   Calendar, 
   Building, 
@@ -22,7 +23,8 @@ import {
   Sparkles,
   ChevronDown,
   BookOpen,
-  ClipboardList
+  ClipboardList,
+  Tag as TagIcon
 } from 'lucide-react';
 
 interface Props {
@@ -46,7 +48,7 @@ export const JobDetailView: React.FC<Props> = ({
     window.scrollTo(0, 0);
   }, [post.id]);
 
-  const getAd = (key: string) => adSlots.find(a => a.slotKey === key);
+  const getAd = (key: string) => findAdSlot(adSlots, key);
 
   // Structured Data (JSON-LD) for Google Search SEO
   const jobPostingSchema = {
@@ -93,6 +95,11 @@ export const JobDetailView: React.FC<Props> = ({
     }))
   } : null;
 
+  const categorySlug = categories.find(c => c.id === post.categoryId)?.slug || post.categoryId;
+  const canonicalPathUrl = (post.canonicalUrl && !post.canonicalUrl.includes('#')) 
+    ? post.canonicalUrl 
+    : `https://mpexamupdate.in/job/${post.slug}`;
+
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 animate-fade-in space-y-6">
       
@@ -101,15 +108,15 @@ export const JobDetailView: React.FC<Props> = ({
         title={post.seoTitle || post.titleHindi || post.title}
         description={post.seoDescription || post.excerpt || `${post.title} - पात्रता, आयु सीमा, चयन प्रक्रिया, महत्वपूर्ण तिथियां, आवेदन शुल्क एवं आधिकारिक अधिसूचना।`}
         keywords={post.focusKeyword ? `${post.focusKeyword}, ${post.secondaryKeywords || ''}, MP Jobs 2026, ${post.organization}` : (post.tags || []).join(', ')}
-        canonicalUrl={post.canonicalUrl || `https://mpexamupdate.in/#post/${post.slug}`}
+        canonicalUrl={canonicalPathUrl}
         ogType="article"
         ogImage={post.featuredImage}
         publishedTime={post.createdAt}
         modifiedTime={post.updatedAt}
         breadcrumbs={[
           { name: 'होम', item: 'https://mpexamupdate.in/' },
-          { name: post.categoryName, item: `https://mpexamupdate.in/#category/${post.categoryId}` },
-          { name: post.titleHindi || post.title, item: `https://mpexamupdate.in/#post/${post.slug}` }
+          { name: post.categoryName, item: `https://mpexamupdate.in/category/${categorySlug}` },
+          { name: post.titleHindi || post.title, item: `https://mpexamupdate.in/job/${post.slug}` }
         ]}
         faqs={post.faqs}
         jobPosting={post.postType === 'job' ? {
@@ -126,7 +133,7 @@ export const JobDetailView: React.FC<Props> = ({
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
-          { label: post.categoryName, href: `category/${post.categoryId}` },
+          { label: post.categoryName, href: `category/${categorySlug}` },
           { label: post.titleHindi || post.title }
         ]}
         onNavigate={onNavigate}
@@ -580,6 +587,28 @@ export const JobDetailView: React.FC<Props> = ({
               ))}
             </div>
           </section>
+        )}
+
+        {/* Post Tags (Clickable for Filtering) */}
+        {post.tags && post.tags.length > 0 && (
+          <div className="pt-4 pb-2 border-t border-slate-200">
+            <span className="text-xs font-bold text-slate-700 block mb-2 flex items-center gap-1.5">
+              <TagIcon className="w-3.5 h-3.5 text-blue-700" />
+              <span>संबंधित विषय एवं टैग्स (Tags):</span>
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {post.tags.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => onNavigate(`tag/${encodeURIComponent(t)}`)}
+                  className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 rounded-lg text-xs font-semibold border border-blue-200 transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <span>#{t}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Mandatory Official Disclaimer */}

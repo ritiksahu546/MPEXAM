@@ -16,9 +16,11 @@ export const HomepageManager: React.FC<Props> = ({
   onSaveSettings
 }) => {
   const [config, setConfig] = useState<HomepageSectionsConfig>(sections);
-  const [tickerText, setTickerText] = useState(settings.tickerText || '');
-  const [tickerLink, setTickerLink] = useState(settings.tickerLink || '');
-  const [tickerEnabled, setTickerEnabled] = useState(settings.tickerEnabled !== false);
+  const [tickerText, setTickerText] = useState(settings.announcement?.text || settings.tickerText || '');
+  const [tickerLink, setTickerLink] = useState(settings.announcement?.link || settings.tickerLink || '');
+  const [tickerEnabled, setTickerEnabled] = useState(
+    (settings.announcement?.enabled ?? settings.tickerEnabled) !== false
+  );
 
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -40,7 +42,13 @@ export const HomepageManager: React.FC<Props> = ({
           ...settings,
           tickerText,
           tickerLink,
-          tickerEnabled
+          tickerEnabled,
+          announcement: {
+            text: tickerText,
+            link: tickerLink,
+            enabled: tickerEnabled
+          },
+          homepageSections: config
         })
       ]);
       setSuccessMsg('होमपेज लेआउट एवं अलर्ट बार सफलतापूर्वक अपडेट किए गए!');

@@ -32,7 +32,8 @@ import {
   FirebaseStorage, 
   ref, 
   uploadBytes, 
-  getDownloadURL 
+  getDownloadURL,
+  deleteObject
 } from 'firebase/storage';
 
 // Optional fallback to applet configuration if env variables are not explicitly injected
@@ -184,6 +185,92 @@ export async function uploadPdfToStorage(file: File, folder = 'notifications'): 
   });
 
   return await getDownloadURL(snapshot.ref);
+}
+
+/**
+ * Result of media upload with both public download URL and storage path for clean deletion.
+ */
+export interface MediaUploadResult {
+  url: string;
+  storagePath: string;
+  type: 'image' | 'pdf';
+  name: string;
+}
+
+/**
+ * Uploads media (image or PDF) and returns both public URL and internal storage path.
+ */
+export async function uploadMediaFileToStorage(file: File, folder = 'media_library'): Promise<MediaUploadResult> {
+  if (!storage) {
+    throw new Error('Firebase Storage is not initialized. Please verify your Firebase configuration.');
+  }
+
+  let type: 'image' | 'pdf' = 'image';
+  let contentType = file.type;
+
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    type = 'pdf';
+    contentType = 'application/pdf';
+    if (file.size > 15 * 1024 * 1024) {
+      throw new Error('PDF का आकार 15MB से कम होना चाहिए (PDF must be under 15MB).');
+    }
+  } else if (file.type.startsWith('image/')) {
+    type = 'image';
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error('इमेज का आकार 5MB से कम होना चाहिए (Image must be under 5MB).');
+    }
+  } else {
+    throw new Error('केवल इमेज (JPG, PNG, WEBP) या PDF फाइल अपलोड करें।');
+  }
+
+  const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const storagePath = `${folder}/${Date.now()}_${cleanName}`;
+  const fileRef = ref(storage, storagePath);
+
+  const snapshot = await uploadBytes(fileRef, file, { contentType });
+  const url = await getDownloadURL(snapshot.ref);
+
+  return {
+    url,
+    storagePath,
+    type,
+    name: file.name
+  };
+}
+
+/**
+ * Permanently deletes a file from Firebase Storage.
+ * Accepts either storage path or full https download URL.
+ * Safely skips non-Firebase URLs (sample mock data).
+ */
+export async function deleteMediaFromStorage(pathOrUrl: string): Promise<boolean> {
+  if (!storage) {
+    throw new Error('Firebase Storage is not initialized.');
+  }
+  if (!pathOrUrl || typeof pathOrUrl !== 'string') {
+    return false;
+  }
+
+  // If this is an external link (like Unsplash sample data), skip Firebase Storage deletion
+  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+    const isFirebaseStorage = pathOrUrl.includes('firebasestorage.googleapis.com') || pathOrUrl.includes('storage.googleapis.com');
+    if (!isFirebaseStorage) {
+      return false;
+    }
+  }
+
+  try {
+    const fileRef = ref(storage, pathOrUrl);
+    await deleteObject(fileRef);
+    return true;
+  } catch (error: any) {
+    // If the object already does not exist in storage, it's considered successfully deleted
+    if (error?.code === 'storage/object-not-found') {
+      return true;
+    }
+    console.error('Failed to delete file from Firebase Storage:', error);
+    throw error;
+  }
 }
 
 /**

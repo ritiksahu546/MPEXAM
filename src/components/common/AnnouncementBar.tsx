@@ -8,14 +8,20 @@ interface Props {
 }
 
 export const AnnouncementBar: React.FC<Props> = ({ settings, onNavigate }) => {
-  if (!settings.announcement?.enabled || !settings.announcement.text) {
+  const isSectionEnabled = settings.homepageSections?.announcementBar !== false;
+  const isBarEnabled = (settings.announcement?.enabled ?? settings.tickerEnabled) !== false;
+  const text = settings.announcement?.text || settings.tickerText;
+  const link = settings.announcement?.link || settings.tickerLink;
+
+  if (!isSectionEnabled || !isBarEnabled || !text) {
     return null;
   }
 
   const handleClick = (e: React.MouseEvent) => {
-    if (settings.announcement.link.startsWith('#')) {
+    if (link && !link.startsWith('http://') && !link.startsWith('https://')) {
       e.preventDefault();
-      onNavigate(settings.announcement.link.replace('#', ''));
+      const cleanPath = link.replace(/^#\/?/, '').replace(/^\//, '');
+      onNavigate(cleanPath);
     }
   };
 
@@ -28,17 +34,17 @@ export const AnnouncementBar: React.FC<Props> = ({ settings, onNavigate }) => {
         </div>
         
         <div className="flex-1 min-w-0 truncate">
-          {settings.announcement.link ? (
+          {link ? (
             <a 
-              href={settings.announcement.link} 
+              href={link} 
               onClick={handleClick}
               className="hover:underline flex items-center gap-1.5 font-medium truncate group"
             >
-              <span className="truncate">{settings.announcement.text}</span>
+              <span className="truncate">{text}</span>
               <ExternalLink className="w-3 h-3 shrink-0 opacity-70 group-hover:opacity-100" />
             </a>
           ) : (
-            <span className="font-medium truncate">{settings.announcement.text}</span>
+            <span className="font-medium truncate">{text}</span>
           )}
         </div>
 

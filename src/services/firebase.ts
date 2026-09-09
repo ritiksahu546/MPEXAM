@@ -8,6 +8,8 @@ import {
   missingFirebaseEnvVars,
   uploadImageToStorage,
   uploadPdfToStorage,
+  uploadMediaFileToStorage,
+  deleteMediaFromStorage,
   verifyAdminAuthorization 
 } from '../lib/firebase';
 import { 
@@ -187,6 +189,8 @@ export {
   missingFirebaseEnvVars,
   uploadImageToStorage,
   uploadPdfToStorage,
+  uploadMediaFileToStorage,
+  deleteMediaFromStorage,
   verifyAdminAuthorization,
   onAuthStateChanged,
   signInWithEmailAndPassword

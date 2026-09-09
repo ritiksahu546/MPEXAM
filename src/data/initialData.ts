@@ -843,12 +843,19 @@ export const INITIAL_SITE_SETTINGS: SiteSettings = {
   telegramLink: 'https://t.me/mpexamupdate_official',
   whatsappLink: 'https://whatsapp.com/channel/mpexamupdate',
   youtubeLink: 'https://youtube.com/@mpexamupdate',
-  googleAnalyticsId: 'G-MPEXAM2026',
-  adSensePublisherId: 'ca-pub-0000000000000000',
-  searchConsoleCode: 'google-site-verification-mp-exam-update',
+  facebookLink: '',
+  socialLinks: {
+    telegram: 'https://t.me/mpexamupdate_official',
+    whatsapp: 'https://whatsapp.com/channel/mpexamupdate',
+    youtube: 'https://youtube.com/@mpexamupdate',
+    facebook: ''
+  },
+  googleAnalyticsId: '',
+  adSensePublisherId: '',
+  searchConsoleCode: '',
   announcement: {
     text: '📢 MP Police Constable 2026: 7500 पदों पर ऑनलाइन आवेदन जारी | MPPSC State Service Prelims 26 अप्रैल को',
-    link: '#job/mp-police-constable-recruitment-2026',
+    link: '/job/mp-police-constable-recruitment-2026',
     enabled: true
   }
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Megaphone, Save, Check, X, AlertCircle, HelpCircle, Code, Calendar } from 'lucide-react';
 import { AdSlotConfig, AdSlotLocation } from '../../types';
+import { findAdSlot } from '../../utils/adSlots';
 
 interface Props {
   adSlots: AdSlotConfig[];
@@ -25,7 +26,7 @@ export const AdManager: React.FC<Props> = ({ adSlots, onSaveAdSlot }) => {
   const [successMsg, setSuccessMsg] = useState('');
 
   const getSlotConfig = (slotKey: AdSlotLocation): AdSlotConfig => {
-    const existing = adSlots.find(s => s.slotKey === slotKey || s.slot === slotKey);
+    const existing = findAdSlot(adSlots, slotKey);
     if (existing) return existing;
     return {
       id: 'ad_' + slotKey.toLowerCase(),
@@ -53,6 +54,7 @@ export const AdManager: React.FC<Props> = ({ adSlots, onSaveAdSlot }) => {
     try {
       const normalized: AdSlotConfig = {
         ...editingSlot,
+        id: editingSlot.id || ('ad_' + String(editingSlot.slotKey).toLowerCase()),
         enabled: Boolean(editingSlot.enabled),
         isActive: Boolean(editingSlot.enabled),
         adCode: editingSlot.adCode || editingSlot.code || '',

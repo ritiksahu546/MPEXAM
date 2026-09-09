@@ -1,0 +1,75 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient Background -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#dc2626" />
+      <stop offset="50%" stop-color="#ea580c" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1200" height="630" fill="url(#bg)" />
+
+  <!-- Top Accent Stripe -->
+  <rect width="1200" height="12" fill="url(#accent)" />
+
+  <!-- Subtle Grid Pattern Lines -->
+  <g stroke="#334155" stroke-width="1" opacity="0.25">
+    <line x1="0" y1="100" x2="1200" y2="100" />
+    <line x1="0" y1="200" x2="1200" y2="200" />
+    <line x1="0" y1="300" x2="1200" y2="300" />
+    <line x1="0" y1="400" x2="1200" y2="400" />
+    <line x1="0" y1="500" x2="1200" y2="500" />
+  </g>
+
+  <!-- Trust Badge -->
+  <g transform="translate(100, 90)">
+    <rect width="320" height="42" rx="21" fill="url(#badgeGrad)" />
+    <text x="160" y="27" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" text-anchor="middle" letter-spacing="1">
+      ★ MP EXAM UPDATE • OFFICIAL PORTAL
+    </text>
+  </g>
+
+  <!-- Main Hindi Title -->
+  <text x="100" y="225" fill="#f8fafc" font-family="'Mukta', 'Plus Jakarta Sans', sans-serif" font-size="64" font-weight="800" letter-spacing="-1">
+    मध्य प्रदेश सरकारी नौकरी एवं परीक्षा पोर्टल
+  </text>
+
+  <!-- Subtitle -->
+  <text x="100" y="295" fill="#38bdf8" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="700">
+    MPPSC • MPESB (व्यापम) • पुलिस भर्ती • शिक्षक भर्ती 2026
+  </text>
+
+  <!-- Description Box -->
+  <g transform="translate(100, 360)">
+    <rect width="1000" height="130" rx="16" fill="#1e293b" stroke="#334155" stroke-width="2" />
+    <text x="40" y="50" fill="#cbd5e1" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="500">
+      ✓ नवीनतम भर्ती अधिसूचना (Latest Notifications)
+    </text>
+    <text x="40" y="92" fill="#cbd5e1" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="500">
+      ✓ ऑनलाइन आवेदन, परीक्षा तिथियां, एडमिट कार्ड, आंसर-की व परिणाम
+    </text>
+  </g>
+
+  <!-- Bottom Brand Bar -->
+  <g transform="translate(100, 545)">
+    <circle cx="20" cy="20" r="18" fill="#ea580c" />
+    <text x="20" y="26" fill="#ffffff" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">MP</text>
+    <text x="55" y="27" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="22" font-weight="600">
+      https://mpexamupdate.in
+    </text>
+    <text x="1000" y="27" fill="#f59e0b" font-family="system-ui, sans-serif" font-size="20" font-weight="700" text-anchor="end">
+      2026 भर्ती एवं परीक्षा अपडेट्स
+    </text>
+  </g>
+</svg>

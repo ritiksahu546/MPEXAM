@@ -9,7 +9,8 @@ interface Props {
 export const ShareButtons: React.FC<Props> = ({ title, url }) => {
   const [copied, setCopied] = useState(false);
 
-  const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}/#${url}` : url;
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${cleanPath}` : url;
   const shareText = encodeURIComponent(`${title}\nपूरी जानकारी यहाँ देखें:\n${fullUrl}`);
   const encodedUrl = encodeURIComponent(fullUrl);
 

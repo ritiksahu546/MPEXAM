@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AdSlotConfig } from '../../types';
+import { sanitizeAdCode } from '../../utils/adSanitizer';
 
 interface Props {
   slot: AdSlotConfig | undefined;
@@ -13,7 +14,7 @@ export const AdSlot: React.FC<Props> = ({
   showAdminPlaceholder = false 
 }) => {
   // If no slot configured or explicitly disabled, do not render
-  if (!slot || (!slot.enabled && !slot.isActive)) {
+  if (!slot || slot.enabled === false || slot.isActive === false) {
     return null;
   }
 
@@ -26,11 +27,12 @@ export const AdSlot: React.FC<Props> = ({
     return null;
   }
 
-  const code = slot.adCode || slot.code || '';
+  const rawCode = slot.adCode || slot.code || '';
+  const sanitizedHtml = useMemo(() => sanitizeAdCode(rawCode), [rawCode]);
   const minHeight = slot.minHeight || (slot.format === '300x250' ? 250 : 90);
 
-  // If real ad code / banner HTML exists, render it cleanly with CLS prevention
-  if (code && code.trim() !== '') {
+  // If real, safe ad code exists, render it cleanly with CLS prevention
+  if (sanitizedHtml) {
     return (
       <aside 
         aria-label="प्रायोजित विज्ञापन"
@@ -42,7 +44,7 @@ export const AdSlot: React.FC<Props> = ({
         </div>
         <div 
           className="w-full flex justify-center items-center"
-          dangerouslySetInnerHTML={{ __html: code }}
+          dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
       </aside>
     );

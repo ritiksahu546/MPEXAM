@@ -39,7 +39,7 @@ export const SEOHead: React.FC<SEOProps> = ({
   keywords = 'MP Jobs 2026, MPPSC, MPESB, MP Police, Sarkari Result MP, एडमिट कार्ड, परीक्षा परिणाम',
   canonicalUrl,
   ogType = 'website',
-  ogImage = 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1200&h=630&fit=crop',
+  ogImage = 'https://mpexamupdate.in/og-banner.svg',
   publishedTime,
   modifiedTime,
   breadcrumbs,
@@ -79,8 +79,9 @@ export const SEOHead: React.FC<SEOProps> = ({
       setMeta('name', 'keywords', keywords);
     }
 
-    // 3. Canonical URL
-    const currentUrl = canonicalUrl || (typeof window !== 'undefined' ? window.location.href : 'https://mpexamupdate.in');
+    // 3. Canonical URL (Never contain hash)
+    const rawUrl = canonicalUrl || (typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'https://mpexamupdate.in');
+    const currentUrl = rawUrl.split('#')[0];
     setLink('canonical', currentUrl);
 
     // 4. Open Graph Tags
@@ -120,7 +121,7 @@ export const SEOHead: React.FC<SEOProps> = ({
         description: 'मध्य प्रदेश सरकारी नौकरी, MPPSC, MPESB, एडमिट कार्ड, रिजल्ट और परीक्षा पोर्टल',
         potentialAction: {
           '@type': 'SearchAction',
-          target: 'https://mpexamupdate.in/#search?q={search_term_string}',
+          target: 'https://mpexamupdate.in/search?q={search_term_string}',
           'query-input': 'required name=search_term_string'
         }
       });

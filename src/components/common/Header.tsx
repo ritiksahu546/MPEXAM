@@ -47,16 +47,34 @@ export const Header: React.FC<Props> = ({
     setMobileMenuOpen(false);
   };
 
-  const navLinks = [
+  const baseLinks = [
     { label: 'होम', route: 'home' },
     { label: 'सरकारी नौकरी', route: 'jobs' },
     { label: 'एडमिट कार्ड', route: 'admit-cards' },
     { label: 'रिजल्ट', route: 'results' },
     { label: 'आंसर की', route: 'answer-keys' },
-    { label: 'MPPSC', route: 'category/mppsc' },
-    { label: 'MPESB व्यापम', route: 'category/mpesb' },
-    { label: 'सरकारी योजनाएँ', route: 'category/sarkari-yojana' },
-    { label: 'परीक्षा कैलेंडर', route: 'category/exam-calendar' }
+  ];
+
+  // Dynamic category links from active categories
+  const activeNavCategories = categories
+    .filter(c => c.active !== false)
+    .slice(0, 5)
+    .map(c => ({
+      label: c.nameHindi || c.nameEnglish || (c as any).name || c.slug,
+      route: `category/${c.slug}`
+    }));
+
+  const telegramUrl = settings.socialLinks?.telegram || settings.telegramLink;
+  const whatsappUrl = settings.socialLinks?.whatsapp || settings.whatsappLink;
+
+  const navLinks = [
+    ...baseLinks,
+    ...(activeNavCategories.length > 0 ? activeNavCategories : [
+      { label: 'MPPSC', route: 'category/mppsc' },
+      { label: 'MPESB व्यापम', route: 'category/mpesb' },
+      { label: 'सरकारी योजनाएँ', route: 'category/sarkari-yojana' },
+      { label: 'परीक्षा कैलेंडर', route: 'category/exam-calendar' }
+    ])
   ];
 
   return (
@@ -73,7 +91,7 @@ export const Header: React.FC<Props> = ({
 
           <div className="flex items-center gap-4 text-xs font-medium">
             <a 
-              href={settings.telegramLink} 
+              href={telegramUrl} 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-sky-300 hover:text-sky-200 transition-colors"
@@ -82,7 +100,7 @@ export const Header: React.FC<Props> = ({
               <span>टेलीग्राम ग्रुप</span>
             </a>
             <a 
-              href={settings.whatsappLink} 
+              href={whatsappUrl} 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors"
@@ -118,20 +136,29 @@ export const Header: React.FC<Props> = ({
             onClick={() => handleNav('home')}
             className="cursor-pointer flex items-center gap-2 sm:gap-2.5 min-w-0 select-none group"
           >
-            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-blue-800 via-blue-700 to-amber-500 text-white flex items-center justify-center font-black text-base sm:text-xl shadow-md border border-blue-900/20 group-hover:scale-105 transition-transform shrink-0">
-              <span>MP</span>
-            </div>
+            {settings.logoUrl || settings.logo ? (
+              <img
+                src={settings.logoUrl || settings.logo}
+                alt={settings.siteName || 'MP Exam Update'}
+                className="h-9 sm:h-11 w-auto max-w-[140px] sm:max-w-[200px] object-contain rounded-lg group-hover:scale-105 transition-transform shrink-0"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-blue-800 via-blue-700 to-amber-500 text-white flex items-center justify-center font-black text-base sm:text-xl shadow-md border border-blue-900/20 group-hover:scale-105 transition-transform shrink-0">
+                <span>{(settings.siteName || 'MP').slice(0, 2).toUpperCase()}</span>
+              </div>
+            )}
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-base sm:text-2xl font-black text-slate-900 tracking-tight leading-none group-hover:text-blue-800 transition-colors truncate">
-                  MP Exam Update
+                  {settings.siteName || 'MP Exam Update'}
                 </span>
                 <span className="hidden md:inline-block bg-amber-500 text-slate-950 font-bold text-[10px] px-1.5 py-0.2 rounded uppercase shrink-0">
                   MP 2026
                 </span>
               </div>
               <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-none mt-1 truncate hidden sm:block">
-                मध्य प्रदेश सरकारी नौकरी एवं परीक्षा पोर्टल
+                {settings.siteTagline || 'मध्य प्रदेश सरकारी नौकरी एवं परीक्षा पोर्टल'}
               </p>
             </div>
           </div>
@@ -156,7 +183,7 @@ export const Header: React.FC<Props> = ({
 
           {/* Direct Telegram join CTA on tablet / desktop */}
           <a
-            href={settings.telegramLink}
+            href={telegramUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="hidden md:flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0"
@@ -214,7 +241,7 @@ export const Header: React.FC<Props> = ({
           <div className="relative z-40 lg:hidden bg-white border-b border-slate-200 p-4 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-2 max-h-[calc(100vh-65px)] overflow-y-auto">
             <div className="grid grid-cols-2 gap-2 text-xs">
               <a
-                href={settings.telegramLink}
+                href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white p-2.5 rounded-lg font-bold transition-colors"
@@ -223,7 +250,7 @@ export const Header: React.FC<Props> = ({
                 <span>Telegram ग्रुप</span>
               </a>
               <a
-                href={settings.whatsappLink}
+                href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-lg font-bold transition-colors"
