@@ -162,7 +162,7 @@ export async function confirmResetPassword(oobCode: string, newPass: string): Pr
   await confirmPasswordReset(auth, oobCode, newPass);
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(timeoutMs = 25000) {
   if (!auth) {
     throw new Error('Firebase Auth is not configured. Please set your Firebase credentials.');
   }
@@ -171,7 +171,21 @@ export async function signInWithGoogle() {
   provider.setCustomParameters({
     prompt: 'select_account'
   });
-  return await signInWithPopup(auth, provider);
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      const err: any = new Error(
+        'Google लॉगिन विंडो से समय पर प्रतिक्रिया नहीं मिली (Timeout)। आईफ्रेम (Preview) में ब्राउज़र सुरक्षा के कारण पॉपअप अवरुद्ध हो सकता है। कृपया पृष्ठ को "नए टैब में खोलें (Open in New Tab)" और पुनः प्रयास करें।'
+      );
+      err.code = 'auth/popup-timeout';
+      reject(err);
+    }, timeoutMs);
+  });
+
+  return await Promise.race([
+    signInWithPopup(auth, provider),
+    timeoutPromise
+  ]);
 }
 
 export async function logOut() {

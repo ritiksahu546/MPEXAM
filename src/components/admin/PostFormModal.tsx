@@ -487,6 +487,8 @@ export const PostFormModal: React.FC<Props> = ({
                     <option value="admit_card">प्रवेश पत्र (Admit Card)</option>
                     <option value="answer_key">उत्तर कुंजी (Answer Key)</option>
                     <option value="syllabus">पाठ्यक्रम (Syllabus)</option>
+                    <option value="previous_paper">पुराना पेपर (Previous Year Paper)</option>
+                    <option value="scheme">सरकारी योजना (Govt Scheme)</option>
                     <option value="admission">प्रवेश (Admission)</option>
                   </select>
                 </div>

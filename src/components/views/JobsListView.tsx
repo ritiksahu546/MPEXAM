@@ -111,8 +111,31 @@ export const JobsListView: React.FC<Props> = ({
     } else if (sortBy === 'most_viewed') {
       list.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
     } else if (sortBy === 'closing_soon') {
-      // posts with last dates sorted
-      list.sort((a, b) => (a.applicationLastDate ? -1 : 1));
+      // Sort by nearest active deadline first, expired deadlines at the end
+      const getDaysLeftScore = (dateStr?: string) => {
+        if (!dateStr) return 99999;
+        const trimmed = dateStr.trim();
+        let d: Date | null = null;
+        if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+          d = new Date(trimmed);
+        } else {
+          const parts = trimmed.split(/[-/]/);
+          if (parts.length === 3 && parts[0].length <= 2 && parts[2].length === 4) {
+            d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+          } else {
+            const parsed = new Date(trimmed);
+            if (!isNaN(parsed.getTime())) d = parsed;
+          }
+        }
+        if (!d || isNaN(d.getTime())) return 99999;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        // Active deadlines (>=0) ranked first by closeness; past (<0) placed at the end
+        return diff >= 0 ? diff : 100000 + Math.abs(diff);
+      };
+      list.sort((a, b) => getDaysLeftScore(a.applicationLastDate) - getDaysLeftScore(b.applicationLastDate));
     }
     return list;
   }, [filteredPosts, sortBy]);

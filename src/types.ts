@@ -1,4 +1,4 @@
-export type PostType = 'job' | 'admit_card' | 'result' | 'answer_key' | 'syllabus' | 'scheme';
+export type PostType = 'job' | 'admit_card' | 'result' | 'answer_key' | 'syllabus' | 'scheme' | 'previous_paper';
 export type PostStatus = 'published' | 'draft' | 'archived';
 
 export interface FAQItem {
@@ -155,6 +155,10 @@ export interface HomepageSectionsConfig {
   policeUpdates?: boolean;
   teacherUpdates?: boolean;
   examCalendar?: boolean;
+  schemes?: boolean;
+  previousPapers?: boolean;
+  syllabus?: boolean;
+  seoContent?: boolean;
 }
 
 export interface SiteSettings {

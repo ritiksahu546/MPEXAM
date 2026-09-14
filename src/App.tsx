@@ -37,12 +37,14 @@ import {
 import { onAuthStateChanged, auth, logOut, testFirebaseConnection, verifyAdminAuthorization } from './services/firebase';
 
 import { Header } from './components/common/Header';
+import { MobileBottomNav } from './components/common/MobileBottomNav';
 import { AnnouncementBar } from './components/common/AnnouncementBar';
 import { Footer } from './components/common/Footer';
 import { SearchModal } from './components/modals/SearchModal';
 import { HomeView } from './components/views/HomeView';
 import { JobDetailView } from './components/views/JobDetailView';
 import { JobsListView } from './components/views/JobsListView';
+import { SavedJobsView } from './components/views/SavedJobsView';
 import { StaticPageView } from './components/views/StaticPageView';
 import { SitemapView } from './components/views/SitemapView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
@@ -229,12 +231,15 @@ export default function App() {
     }
   }, [location.pathname, routerNavigate]);
 
-  // Keyboard shortcut Ctrl+K / Cmd+K for search
+  // Keyboard shortcut Ctrl+K / Cmd+K or '/' for search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsSearchOpen(prev => !prev);
+      } else if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
+        e.preventDefault();
+        setIsSearchOpen(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -738,6 +743,19 @@ export default function App() {
       );
     }
 
+    // 8c. Saved / Bookmarked Jobs (/saved-jobs)
+    if (currentRoute === 'saved-jobs') {
+      return (
+        <SavedJobsView
+          posts={publishedPosts}
+          categories={categories}
+          adSlots={adSlots}
+          onNavigate={navigate}
+          onSelectPost={handleSelectPost}
+        />
+      );
+    }
+
     // 9. Static / Legal Pages (Requirement #22)
     if (['about', 'contact', 'privacy-policy', 'terms-and-conditions', 'disclaimer', 'advertisement'].includes(currentRoute)) {
       return (
@@ -794,7 +812,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white max-w-full overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white max-w-full overflow-x-hidden pb-16 md:pb-0">
       {/* Top Ticker Alert Bar (Requirement #20) */}
       <AnnouncementBar
         settings={settings}
@@ -822,6 +840,13 @@ export default function App() {
         categories={categories}
         importantLinks={importantLinks}
         onNavigate={navigate}
+      />
+
+      {/* Mobile Sticky Bottom Navigation (Phone View) */}
+      <MobileBottomNav
+        currentRoute={currentRoute}
+        onNavigate={navigate}
+        onOpenSearch={() => setIsSearchOpen(true)}
       />
 
       {/* Global Interactive Search Modal (Ctrl + K) */}

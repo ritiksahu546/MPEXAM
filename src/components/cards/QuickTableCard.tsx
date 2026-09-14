@@ -1,6 +1,6 @@
 import React from 'react';
 import { Post } from '../../types';
-import { ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronRight, Sparkles, Building, Calendar, ArrowRight } from 'lucide-react';
 
 interface Props {
   title: string;
@@ -21,84 +21,115 @@ export const QuickTableCard: React.FC<Props> = ({
 }) => {
   const colorMap = {
     blue: {
-      header: 'bg-blue-700 text-white',
-      border: 'border-blue-200',
-      tag: 'bg-blue-50 text-blue-700'
+      header: 'bg-gradient-to-r from-blue-800 to-blue-700 text-white',
+      border: 'border-blue-200 hover:border-blue-400',
+      badge: 'bg-blue-100 text-blue-800',
+      chevron: 'text-blue-600'
     },
     amber: {
-      header: 'bg-amber-600 text-white',
-      border: 'border-amber-200',
-      tag: 'bg-amber-50 text-amber-800'
+      header: 'bg-gradient-to-r from-amber-700 to-amber-600 text-white',
+      border: 'border-amber-200 hover:border-amber-400',
+      badge: 'bg-amber-100 text-amber-800',
+      chevron: 'text-amber-600'
     },
     emerald: {
-      header: 'bg-emerald-700 text-white',
-      border: 'border-emerald-200',
-      tag: 'bg-emerald-50 text-emerald-800'
+      header: 'bg-gradient-to-r from-emerald-800 to-emerald-700 text-white',
+      border: 'border-emerald-200 hover:border-emerald-400',
+      badge: 'bg-emerald-100 text-emerald-800',
+      chevron: 'text-emerald-600'
     },
     purple: {
-      header: 'bg-purple-700 text-white',
-      border: 'border-purple-200',
-      tag: 'bg-purple-50 text-purple-800'
+      header: 'bg-gradient-to-r from-purple-800 to-purple-700 text-white',
+      border: 'border-purple-200 hover:border-purple-400',
+      badge: 'bg-purple-100 text-purple-800',
+      chevron: 'text-purple-600'
     }
   };
 
   const theme = colorMap[accentColor];
 
   return (
-    <div className={`bg-white rounded-xl border ${theme.border} shadow-xs overflow-hidden flex flex-col h-full`}>
-      <div className={`${theme.header} p-3 sm:p-3.5 flex items-center justify-between gap-2 min-w-0`}>
+    <div className={`bg-white rounded-2xl border ${theme.border} shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col h-full`}>
+      {/* Header */}
+      <div className={`${theme.header} p-3.5 sm:p-4 flex items-center justify-between gap-2 min-w-0 shadow-xs`}>
         <div className="min-w-0">
-          <h2 className="font-bold text-base sm:text-lg flex items-center gap-1.5 leading-tight truncate">
+          <h3 className="font-extrabold text-base sm:text-lg flex items-center gap-1.5 leading-tight truncate">
             <span className="truncate">{title}</span>
-          </h2>
-          <span className="text-[11px] opacity-90 tracking-wide uppercase font-medium block truncate">{titleEn}</span>
+          </h3>
+          <span className="text-[11px] text-white/80 tracking-wider uppercase font-semibold block truncate mt-0.5">
+            {titleEn}
+          </span>
         </div>
         <button
           onClick={onViewAll}
-          className="text-[11px] font-bold bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-md transition-colors shrink-0"
+          className="text-xs font-bold bg-white/20 hover:bg-white/30 active:bg-white/40 text-white px-3 py-1.5 rounded-lg transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
         >
-          सभी देखें
+          <span>सभी</span>
+          <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
+      {/* List Items */}
       <div className="p-3 flex-1 flex flex-col divide-y divide-slate-100">
         {posts.length === 0 ? (
-          <div className="py-6 text-center text-xs text-slate-600">
-            फिलहाल कोई नया अपडेट नहीं है।
+          <div className="py-8 text-center text-xs text-slate-500 font-medium">
+            वर्तमान में कोई नया अपडेट उपलब्ध नहीं है।
           </div>
         ) : (
-          posts.slice(0, 5).map((post) => (
-            <div
-              key={post.id}
-              onClick={() => onSelectPost(post.slug)}
-              className="py-2.5 px-1 hover:bg-slate-50 rounded-md transition-colors cursor-pointer group flex items-start gap-2"
-            >
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-semibold text-slate-800 group-hover:text-blue-700 transition-colors line-clamp-2 leading-snug">
-                  {post.titleHindi || post.title}
-                </p>
-                <div className="flex items-center justify-between gap-2 mt-1 text-[11px] text-slate-600 min-w-0">
-                  <span className="truncate flex-1">{post.organization}</span>
-                  {post.applicationLastDate && (
-                    <span className="text-red-600 font-medium shrink-0">
-                      अंतिम: {post.applicationLastDate}
-                    </span>
-                  )}
+          posts.slice(0, 5).map((post, idx) => {
+            const isRecent = idx === 0;
+            return (
+              <a
+                key={post.id}
+                href={`/job/${post.slug}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectPost(post.slug);
+                }}
+                className="py-2.5 px-2 hover:bg-slate-50/90 rounded-xl transition-all cursor-pointer group flex items-start gap-2.5 block"
+              >
+                <div className="mt-1 shrink-0">
+                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-blue-600 transition-colors" />
                 </div>
-              </div>
-            </div>
-          ))
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors line-clamp-2 leading-snug">
+                      {post.titleHindi || post.title}
+                    </span>
+                    {isRecent && (
+                      <span className="shrink-0 bg-red-100 text-red-700 text-[10px] font-black px-1.5 py-0.2 rounded uppercase tracking-wider">
+                        NEW
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 min-w-0">
+                    <span className="truncate flex items-center gap-1">
+                      <Building className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span className="truncate">{post.organization}</span>
+                    </span>
+                    {post.applicationLastDate && (
+                      <span className="text-red-600 font-medium shrink-0 flex items-center gap-0.5">
+                        <Calendar className="w-3 h-3 text-red-500 shrink-0" />
+                        <span>अंतिम: {post.applicationLastDate}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <ChevronRight className={`w-4 h-4 text-slate-400 group-hover:${theme.chevron} group-hover:translate-x-0.5 transition-all shrink-0 mt-1`} />
+              </a>
+            );
+          })
         )}
       </div>
 
-      <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
+      {/* Footer View All Link */}
+      <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
         <button
           onClick={onViewAll}
-          className="text-xs font-bold text-blue-700 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+          className="text-xs font-bold text-blue-700 hover:text-blue-900 inline-flex items-center gap-1 group cursor-pointer"
         >
           <span>इस श्रेणी के सभी {posts.length} पोस्ट देखें</span>
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>
     </div>

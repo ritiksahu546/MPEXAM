@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Clock, ArrowRight, Building, Sparkles, AlertCircle } from 'lucide-react';
+import { Search, X, Clock, ArrowRight, Building, Sparkles, AlertCircle, Calendar } from 'lucide-react';
 import { Post } from '../../types';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
   onSelectPost: (slug: string) => void;
 }
 
-const RECENT_SEARCHES_KEY = 'mp_exam_recent_searches_v1';
+const RECENT_SEARCHES_KEY = 'mp_exam_recent_searches_v2';
 
 export const SearchModal: React.FC<Props> = ({
   isOpen,
@@ -37,6 +37,17 @@ export const SearchModal: React.FC<Props> = ({
     }
   }, [isOpen]);
 
+  // Handle escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const saveSearchTerm = (term: string) => {
@@ -44,12 +55,16 @@ export const SearchModal: React.FC<Props> = ({
     const trimmed = term.trim();
     const updated = [trimmed, ...recentSearches.filter(t => t.toLowerCase() !== trimmed.toLowerCase())].slice(0, 6);
     setRecentSearches(updated);
-    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+    try {
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+    } catch {}
   };
 
   const clearRecentSearches = () => {
     setRecentSearches([]);
-    localStorage.removeItem(RECENT_SEARCHES_KEY);
+    try {
+      localStorage.removeItem(RECENT_SEARCHES_KEY);
+    } catch {}
   };
 
   const handleSelect = (slug: string, termToSave?: string) => {
@@ -66,10 +81,10 @@ export const SearchModal: React.FC<Props> = ({
     const q = query.toLowerCase();
     const tagsMatch = post.tags && post.tags.some(t => t.toLowerCase().includes(q));
     return (
-      post.title.toLowerCase().includes(q) ||
-      post.titleHindi.toLowerCase().includes(q) ||
-      post.organization.toLowerCase().includes(q) ||
-      post.categoryName.toLowerCase().includes(q) ||
+      post.title?.toLowerCase().includes(q) ||
+      post.titleHindi?.toLowerCase().includes(q) ||
+      post.organization?.toLowerCase().includes(q) ||
+      post.categoryName?.toLowerCase().includes(q) ||
       (post.focusKeyword && post.focusKeyword.toLowerCase().includes(q)) ||
       (post.qualification && post.qualification.toLowerCase().includes(q)) ||
       (post.secondaryKeywords && post.secondaryKeywords.toLowerCase().includes(q)) ||
@@ -87,11 +102,20 @@ export const SearchModal: React.FC<Props> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-start justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden mt-6 sm:mt-12 animate-in fade-in duration-150">
-        
+    <div 
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-start justify-center p-3 sm:p-6 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden mt-6 sm:mt-12 animate-in fade-in zoom-in-95 duration-150"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search Modal"
+      >
         {/* Search Input Bar */}
-        <div className="p-3 sm:p-4 border-b border-slate-200 flex items-center gap-3 bg-slate-50/50">
+        <div className="p-3 sm:p-4 border-b border-slate-200 flex items-center gap-3 bg-slate-50/70">
           <Search className="w-5 h-5 text-blue-600 shrink-0" />
           <input
             ref={inputRef}
@@ -104,40 +128,41 @@ export const SearchModal: React.FC<Props> = ({
               }
             }}
             placeholder="भर्ती, परीक्षा, विभाग, MPPSC, व्यापम या पद का नाम खोजें..."
-            className="flex-1 bg-transparent text-slate-900 placeholder:text-slate-600 text-sm sm:text-base outline-hidden font-medium"
+            className="flex-1 bg-transparent text-slate-900 placeholder:text-slate-500 text-sm sm:text-base outline-hidden font-medium"
           />
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="p-1 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600"
+              className="p-1 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
+              aria-label="Clear query"
             >
               <X className="w-4 h-4" />
             </button>
           )}
           <button
             onClick={onClose}
-            className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-800 bg-slate-200/70 hover:bg-slate-200 rounded-lg"
+            className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-200/70 hover:bg-slate-200 rounded-lg cursor-pointer"
           >
-            बंद करें (Esc)
+            Esc
           </button>
         </div>
 
         {/* Filter Type Pills */}
-        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-slate-50/70 overflow-x-auto text-xs">
+        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-slate-50/50 overflow-x-auto text-xs scrollbar-none">
           {[
             { id: 'all', label: 'सभी (All)' },
-            { id: 'job', label: 'नौकरियां (Jobs)' },
-            { id: 'admit_card', label: 'एडमिट कार्ड (Admit Card)' },
-            { id: 'result', label: 'परिणाम (Result)' },
-            { id: 'answer_key', label: 'आंसर की (Answer Key)' }
+            { id: 'job', label: 'सरकारी नौकरी' },
+            { id: 'admit_card', label: 'एडमिट कार्ड' },
+            { id: 'result', label: 'रिजल्ट' },
+            { id: 'answer_key', label: 'उत्तर कुंजी' }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setSelectedType(tab.id as any)}
-              className={`px-2.5 py-1 rounded-full font-semibold transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1 rounded-full font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                 selectedType === tab.id
-                  ? 'bg-blue-700 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:bg-slate-200/80 border border-slate-200'
+                  ? 'bg-blue-800 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               {tab.label}
@@ -146,7 +171,7 @@ export const SearchModal: React.FC<Props> = ({
         </div>
 
         {/* Search Body */}
-        <div className="p-4 max-h-[70vh] overflow-y-auto">
+        <div className="p-4 max-h-[65vh] overflow-y-auto">
           {query.trim() === '' ? (
             <div className="space-y-5">
               {/* Recent Searches */}
@@ -154,12 +179,12 @@ export const SearchModal: React.FC<Props> = ({
                 <div>
                   <div className="flex items-center justify-between text-xs text-slate-600 font-semibold mb-2">
                     <span className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" />
+                      <Clock className="w-3.5 h-3.5 text-slate-500" />
                       हाल ही में की गई खोज (Recent Searches)
                     </span>
                     <button
                       onClick={clearRecentSearches}
-                      className="text-slate-600 hover:text-red-700 hover:underline"
+                      className="text-slate-500 hover:text-red-700 hover:underline cursor-pointer"
                     >
                       हटाएं
                     </button>
@@ -169,9 +194,9 @@ export const SearchModal: React.FC<Props> = ({
                       <button
                         key={i}
                         onClick={() => setQuery(term)}
-                        className="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium px-3 py-1 rounded-full border border-slate-200 transition-colors flex items-center gap-1.5"
+                        className="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium px-3 py-1 rounded-full border border-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
-                        <Clock className="w-3 h-3 text-slate-600" />
+                        <Clock className="w-3 h-3 text-slate-400" />
                         <span>{term}</span>
                       </button>
                     ))}
@@ -190,7 +215,7 @@ export const SearchModal: React.FC<Props> = ({
                     <button
                       key={idx}
                       onClick={() => setQuery(s)}
-                      className="text-xs bg-blue-50/70 hover:bg-blue-100 text-blue-800 font-medium px-3 py-1.5 rounded-lg border border-blue-150 transition-colors"
+                      className="text-xs bg-blue-50/70 hover:bg-blue-100 text-blue-800 font-medium px-3 py-1.5 rounded-xl border border-blue-150 transition-colors cursor-pointer"
                     >
                       {s}
                     </button>
@@ -198,23 +223,23 @@ export const SearchModal: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div className="text-center pt-4 border-t border-slate-100 text-xs text-slate-600">
-                मध्य प्रदेश की सभी भर्तियों, एडमिट कार्ड व नतीजों को खोजें
+              <div className="text-center pt-4 border-t border-slate-100 text-xs text-slate-500">
+                मध्य प्रदेश की सभी सरकारी भर्तियों, एडमिट कार्ड व नतीजों को खोजें
               </div>
             </div>
           ) : (
             <div>
-              <div className="flex items-center justify-between text-xs text-slate-600 font-medium mb-3">
-                <span>सर्च परिणाम: <strong>{filteredPosts.length}</strong> पोस्ट मिले</span>
-                <span className="text-[11px] text-slate-600">"{query}" के लिए</span>
+              <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-3">
+                <span>सर्च परिणाम: <strong className="text-slate-800">{filteredPosts.length}</strong> पोस्ट मिले</span>
+                <span className="text-[11px] text-slate-400">"{query}" के लिए</span>
               </div>
 
               {filteredPosts.length === 0 ? (
                 <div className="text-center py-10 px-4 bg-slate-50 rounded-xl border border-slate-200">
                   <AlertCircle className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                   <h4 className="font-bold text-slate-800 text-sm">कोई परिणाम नहीं मिला</h4>
-                  <p className="text-xs text-slate-600 mt-1 max-w-sm mx-auto">
-                    कृपया अन्य कीवर्ड, विभाग का नाम (जैसे MPPSC, MP Police, Vyapam) या सामान्य नाम से पुनः प्रयास करें।
+                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                    कृपया अन्य कीवर्ड, विभाग का नाम (जैसे MPPSC, MP Police, व्यापम) या पद के नाम से पुनः खोजें।
                   </p>
                 </div>
               ) : (
@@ -223,15 +248,15 @@ export const SearchModal: React.FC<Props> = ({
                     <div
                       key={post.id}
                       onClick={() => handleSelect(post.slug, query)}
-                      className="py-3 px-2 hover:bg-blue-50/50 rounded-lg cursor-pointer transition-colors group flex items-start justify-between gap-3"
+                      className="py-3 px-2 hover:bg-blue-50/50 rounded-xl cursor-pointer transition-colors group flex items-start justify-between gap-3"
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                            {post.categoryName}
+                            {post.categoryName || 'अपडेट'}
                           </span>
-                          <span className="text-xs text-slate-600 flex items-center gap-1 truncate">
-                            <Building className="w-3 h-3 text-slate-600" />
+                          <span className="text-xs text-slate-500 flex items-center gap-1 truncate">
+                            <Building className="w-3 h-3 text-slate-400" />
                             <span className="truncate">{post.organization}</span>
                           </span>
                         </div>
@@ -239,8 +264,9 @@ export const SearchModal: React.FC<Props> = ({
                           {post.titleHindi || post.title}
                         </h4>
                         {post.applicationLastDate && (
-                          <div className="text-[11px] text-red-600 mt-1 font-medium">
-                            अंतिम तिथि: {post.applicationLastDate}
+                          <div className="text-[11px] text-red-600 mt-1 font-medium flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-red-500" />
+                            <span>अंतिम तिथि: {post.applicationLastDate}</span>
                           </div>
                         )}
                       </div>

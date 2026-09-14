@@ -25,3 +25,37 @@
   outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
+
+/* Clean Print Stylesheet for candidates printing job notifications */
+@media print {
+  header, 
+  footer, 
+  nav, 
+  .no-print, 
+  [role="navigation"], 
+  aside, 
+  button, 
+  iframe,
+  .ad-slot,
+  .announcement-bar {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt !important;
+  }
+
+  a {
+    text-decoration: underline !important;
+    color: #000000 !important;
+  }
+
+  .print-header {
+    display: block !important;
+    margin-bottom: 20px !important;
+    border-bottom: 2px solid #000 !important;
+    padding-bottom: 10px !important;
+  }
+}

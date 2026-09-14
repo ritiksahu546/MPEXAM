@@ -65,7 +65,7 @@ export const INITIAL_HOMEPAGE_SECTIONS: HomepageSectionsConfig = {
 let memoryPostsCache: { data: Post[]; timestamp: number } | null = null;
 let memoryAdminPostsCache: { data: Post[]; timestamp: number } | null = null;
 let memoryCategoriesCache: { data: Category[]; timestamp: number } | null = null;
-const CACHE_TTL_MS = 60 * 1000; // 1 minute
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes with stale-while-revalidate protection
 
 export function invalidateCache() {
   memoryPostsCache = null;
@@ -313,6 +313,8 @@ export async function incrementPostViews(postId: string): Promise<void> {
   }
   sessionStorage.setItem(sessionKey, '1');
 
+  let resolvedDocId = postId;
+
   // Update local
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
@@ -320,6 +322,7 @@ export async function incrementPostViews(postId: string): Promise<void> {
       const posts: Post[] = JSON.parse(stored);
       const post = posts.find(p => p.id === postId || p.slug === postId);
       if (post) {
+        resolvedDocId = post.id;
         post.viewCount = (post.viewCount || 0) + 1;
         localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(posts));
       }
@@ -329,9 +332,9 @@ export async function incrementPostViews(postId: string): Promise<void> {
   }
 
   // Increment Firestore
-  if (isFirebaseConfigured && db) {
+  if (isFirebaseConfigured && db && resolvedDocId) {
     try {
-      await updateDoc(doc(db, 'posts', postId), {
+      await updateDoc(doc(db, 'posts', resolvedDocId), {
         viewCount: increment(1)
       });
     } catch {

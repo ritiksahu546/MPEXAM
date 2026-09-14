@@ -33,6 +33,36 @@ export interface SEOProps {
   };
 }
 
+function safeIsoDateString(input?: string, fallbackOffsetDays = 30): string {
+  if (!input) {
+    const d = new Date();
+    d.setDate(d.getDate() + fallbackOffsetDays);
+    return d.toISOString().split('T')[0];
+  }
+  const trimmed = input.trim();
+  // Check if already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+  // Try DD/MM/YYYY or DD-MM-YYYY
+  const dmyMatch = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (dmyMatch) {
+    const day = dmyMatch[1].padStart(2, '0');
+    const month = dmyMatch[2].padStart(2, '0');
+    const year = dmyMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+  // Try Date parsing
+  const parsed = new Date(trimmed);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split('T')[0];
+  }
+  // Fallback
+  const d = new Date();
+  d.setDate(d.getDate() + fallbackOffsetDays);
+  return d.toISOString().split('T')[0];
+}
+
 export const SEOHead: React.FC<SEOProps> = ({
   title,
   description = 'मध्य प्रदेश सरकारी नौकरी, MPPSC, MPESB (व्यापम), पुलिस भर्ती, एडमिट कार्ड, रिजल्ट और परीक्षा अपडेट का सबसे विश्वसनीय पोर्टल।',
@@ -194,8 +224,8 @@ export const SEOHead: React.FC<SEOProps> = ({
         '@type': 'JobPosting',
         title: jobPosting.title,
         description: jobPosting.description,
-        datePosted: jobPosting.datePosted,
-        validThrough: jobPosting.validThrough || '2026-12-31',
+        datePosted: safeIsoDateString(jobPosting.datePosted, 0),
+        validThrough: safeIsoDateString(jobPosting.validThrough, 45),
         employmentType: jobPosting.employmentType || 'FULL_TIME',
         hiringOrganization: {
           '@type': 'Organization',
