@@ -39,26 +39,19 @@ export async function getLiveSitemapXml(baseUrl: string = DEFAULT_BASE_URL): Pro
     // Terminate DB connection to avoid hanging Node sockets/listeners
     await terminate(db);
 
-    const finalPosts = firestorePosts.length > 0 
-      ? firestorePosts 
-      : INITIAL_POSTS.filter(p => p.status === 'published');
+    console.log(`[SitemapFetcher] Queried live Firestore successfully: ${firestorePosts.length} published posts, ${firestoreCats.length} categories.`);
 
-    const finalCats = firestoreCats.length > 0 
-      ? firestoreCats 
-      : INITIAL_CATEGORIES;
-
-    return generateSitemapXml(finalPosts, finalCats, baseUrl);
+    return generateSitemapXml(firestorePosts, firestoreCats, baseUrl);
   } catch (err) {
-    console.warn('Notice: Firestore sitemap live query encountered an issue, generating fallback sitemap:', err);
+    console.error('[SitemapFetcher] Firestore query failed while generating sitemap:', err);
     if (db) {
       try {
         await terminate(db);
       } catch {}
     }
-    return generateSitemapXml(
-      INITIAL_POSTS.filter(p => p.status === 'published'),
-      INITIAL_CATEGORIES,
-      baseUrl
+    // Propagate the actual error so caller knows Firestore failed
+    throw new Error(
+      `Firestore live query failed for sitemap: ${err instanceof Error ? err.message : String(err)}`
     );
   }
 }

@@ -15,6 +15,7 @@ export interface SEOProps {
   description?: string;
   keywords?: string;
   canonicalUrl?: string;
+  noindex?: boolean;
   ogType?: 'website' | 'article';
   ogImage?: string;
   publishedTime?: string;
@@ -23,28 +24,23 @@ export interface SEOProps {
   faqs?: FAQItemSchema[];
   jobPosting?: {
     title: string;
-    description: string;
-    datePosted: string;
+    description?: string;
+    datePosted?: string;
     validThrough?: string;
     organization: string;
     officialWebsite?: string;
+    location?: string;
     salary?: string;
     employmentType?: string;
   };
 }
 
-function safeIsoDateString(input?: string, fallbackOffsetDays = 30): string {
-  if (!input) {
-    const d = new Date();
-    d.setDate(d.getDate() + fallbackOffsetDays);
-    return d.toISOString().split('T')[0];
-  }
+function parseIsoDateOnly(input?: string): string | undefined {
+  if (!input) return undefined;
   const trimmed = input.trim();
-  // Check if already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
     return trimmed;
   }
-  // Try DD/MM/YYYY or DD-MM-YYYY
   const dmyMatch = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
   if (dmyMatch) {
     const day = dmyMatch[1].padStart(2, '0');
@@ -52,15 +48,21 @@ function safeIsoDateString(input?: string, fallbackOffsetDays = 30): string {
     const year = dmyMatch[3];
     return `${year}-${month}-${day}`;
   }
-  // Try Date parsing
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
     return parsed.toISOString().split('T')[0];
   }
-  // Fallback
-  const d = new Date();
-  d.setDate(d.getDate() + fallbackOffsetDays);
-  return d.toISOString().split('T')[0];
+  return undefined;
+}
+
+function parseIsoDateTime(input?: string): string | undefined {
+  if (!input) return undefined;
+  const trimmed = input.trim();
+  const parsed = new Date(trimmed);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString();
+  }
+  return undefined;
 }
 
 export const SEOHead: React.FC<SEOProps> = ({
@@ -68,6 +70,7 @@ export const SEOHead: React.FC<SEOProps> = ({
   description = 'मध्य प्रदेश सरकारी नौकरी, MPPSC, MPESB (व्यापम), पुलिस भर्ती, एडमिट कार्ड, रिजल्ट और परीक्षा अपडेट का सबसे विश्वसनीय पोर्टल।',
   keywords = 'MP Jobs 2026, MPPSC, MPESB, MP Police, Sarkari Result MP, एडमिट कार्ड, परीक्षा परिणाम',
   canonicalUrl,
+  noindex = false,
   ogType = 'website',
   ogImage = 'https://www.mpexamupdates.in/og-banner.svg',
   publishedTime,
@@ -78,7 +81,10 @@ export const SEOHead: React.FC<SEOProps> = ({
 }) => {
   useEffect(() => {
     // 1. Update Title
-    const formattedTitle = title.includes('MP Exam Update') ? title : `${title} | MP Exam Update 2026`;
+    let formattedTitle = title.trim();
+    if (!formattedTitle.includes('MP Exam Update')) {
+      formattedTitle = `${formattedTitle} | MP Exam Update`;
+    }
     document.title = formattedTitle;
 
     // Helper to set or create meta tag
@@ -103,18 +109,30 @@ export const SEOHead: React.FC<SEOProps> = ({
       element.setAttribute('href', href);
     };
 
-    // 2. Standard Metadata
+    // 2. Robots directive
+    if (noindex) {
+      setMeta('name', 'robots', 'noindex, follow');
+    } else {
+      setMeta('name', 'robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+    }
+
+    // 3. Standard Metadata
     setMeta('name', 'description', description);
     if (keywords) {
       setMeta('name', 'keywords', keywords);
     }
 
-    // 3. Canonical URL (Never contain hash)
-    const rawUrl = canonicalUrl || (typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'https://www.mpexamupdates.in');
-    const currentUrl = rawUrl.split('#')[0];
+    // 4. Canonical URL (Never contain hash, normalize trailing slashes)
+    let rawUrl = canonicalUrl || (typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'https://www.mpexamupdates.in');
+    rawUrl = rawUrl.split('#')[0].split('?')[0];
+    // Keep trailing slash only for domain root
+    if (rawUrl.endsWith('/') && !rawUrl.match(/^https?:\/\/[^\/]+\/$/)) {
+      rawUrl = rawUrl.replace(/\/+$/, '');
+    }
+    const currentUrl = rawUrl;
     setLink('canonical', currentUrl);
 
-    // 4. Open Graph Tags
+    // 5. Open Graph Tags
     setMeta('property', 'og:title', formattedTitle);
     setMeta('property', 'og:description', description);
     setMeta('property', 'og:type', ogType);
@@ -159,32 +177,45 @@ export const SEOHead: React.FC<SEOProps> = ({
 
     // Article schema for detailed posts
     if (ogType === 'article') {
-      schemas.push({
+      const articleSchema: Record<string, any> = {
         '@context': 'https://schema.org',
         '@type': 'Article',
         headline: title,
         description: description,
-        image: ogImage ? [ogImage] : undefined,
-        datePublished: publishedTime || new Date().toISOString(),
-        dateModified: modifiedTime || publishedTime || new Date().toISOString(),
         author: {
           '@type': 'Organization',
-          name: 'MP Exam Update editorial team',
-          url: 'https://www.mpexamupdates.in'
+          name: 'MP Exam Update Editorial Team',
+          url: 'https://www.mpexamupdates.in/about'
         },
         publisher: {
           '@type': 'Organization',
           name: 'MP Exam Update',
           logo: {
             '@type': 'ImageObject',
-            url: 'https://www.mpexamupdates.in/logo.png'
+            url: 'https://www.mpexamupdates.in/og-banner.svg'
           }
         },
         mainEntityOfPage: {
           '@type': 'WebPage',
           '@id': currentUrl
         }
-      });
+      };
+
+      if (ogImage) {
+        articleSchema.image = [ogImage];
+      }
+
+      const isoPublished = parseIsoDateTime(publishedTime);
+      if (isoPublished) {
+        articleSchema.datePublished = isoPublished;
+      }
+
+      const isoModified = parseIsoDateTime(modifiedTime) || isoPublished;
+      if (isoModified) {
+        articleSchema.dateModified = isoModified;
+      }
+
+      schemas.push(articleSchema);
     }
 
     // Breadcrumbs schema
@@ -203,52 +234,81 @@ export const SEOHead: React.FC<SEOProps> = ({
 
     // FAQ schema
     if (faqs && faqs.length > 0) {
-      schemas.push({
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: faqs.map(f => ({
-          '@type': 'Question',
-          name: f.question,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: f.answer
-          }
-        }))
-      });
+      const validFaqs = faqs.filter(f => f.question?.trim() && f.answer?.trim());
+      if (validFaqs.length > 0) {
+        schemas.push({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: validFaqs.map(f => ({
+            '@type': 'Question',
+            name: f.question,
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: f.answer
+            }
+          }))
+        });
+      }
     }
 
-    // JobPosting schema ONLY if valid data exists and post represents a job
+    // JobPosting schema ONLY if genuine job and valid data exists
     if (jobPosting && jobPosting.title && jobPosting.organization) {
-      schemas.push({
+      const jobSchema: Record<string, any> = {
         '@context': 'https://schema.org',
         '@type': 'JobPosting',
         title: jobPosting.title,
-        description: jobPosting.description,
-        datePosted: safeIsoDateString(jobPosting.datePosted, 0),
-        validThrough: safeIsoDateString(jobPosting.validThrough, 45),
-        employmentType: jobPosting.employmentType || 'FULL_TIME',
+        description: jobPosting.description || description,
         hiringOrganization: {
           '@type': 'Organization',
-          name: jobPosting.organization,
-          sameAs: jobPosting.officialWebsite || 'https://mp.gov.in'
-        },
-        jobLocation: {
+          name: jobPosting.organization
+        }
+      };
+
+      if (
+        jobPosting.officialWebsite && 
+        jobPosting.officialWebsite.startsWith('http') && 
+        !jobPosting.officialWebsite.includes('mpexamupdates.in')
+      ) {
+        jobSchema.hiringOrganization.sameAs = jobPosting.officialWebsite;
+      }
+
+      const posted = parseIsoDateOnly(jobPosting.datePosted);
+      if (posted) {
+        jobSchema.datePosted = posted;
+      }
+
+      const validThrough = parseIsoDateOnly(jobPosting.validThrough);
+      if (validThrough) {
+        jobSchema.validThrough = validThrough;
+      }
+
+      if (jobPosting.employmentType) {
+        jobSchema.employmentType = jobPosting.employmentType;
+      }
+
+      if (jobPosting.location) {
+        jobSchema.jobLocation = {
           '@type': 'Place',
           address: {
             '@type': 'PostalAddress',
-            addressRegion: 'Madhya Pradesh',
+            addressRegion: jobPosting.location,
             addressCountry: 'IN'
           }
-        },
-        baseSalary: {
+        };
+      }
+
+      if (jobPosting.salary) {
+        jobSchema.baseSalary = {
           '@type': 'MonetaryAmount',
           currency: 'INR',
           value: {
             '@type': 'QuantitativeValue',
-            value: jobPosting.salary || 'Competitive Government Pay Scale'
+            value: jobPosting.salary
           }
-        }
-      });
+        };
+      }
+
+      schemas.push(jobSchema);
     }
 
     // Inject Script element

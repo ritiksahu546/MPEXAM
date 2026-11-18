@@ -47,6 +47,7 @@ import { JobsListView } from './components/views/JobsListView';
 import { SavedJobsView } from './components/views/SavedJobsView';
 import { StaticPageView } from './components/views/StaticPageView';
 import { SitemapView } from './components/views/SitemapView';
+import { NotFoundView } from './components/views/NotFoundView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminLoginView } from './components/admin/AdminLoginView';
 import { ResetPasswordView } from './components/admin/ResetPasswordView';
@@ -185,12 +186,21 @@ export default function App() {
   // Compute canonical path-based route from browser location
   const currentRoute = useMemo(() => {
     const rawPath = location.pathname.replace(/^\//, '');
-    const cleanPath = rawPath.split('?')[0];
+    let cleanPath = rawPath.split('?')[0].replace(/\/+$/, '');
+    if (cleanPath === 'category/central-government-jobs') {
+      cleanPath = 'category/central-jobs';
+    }
     return cleanPath || 'home';
   }, [location.pathname]);
 
   // Backward Compatibility: Automatically redirect legacy hash URLs to proper clean paths
   useEffect(() => {
+    // Also redirect legacy canonical category path if accessed directly
+    const rawPath = location.pathname.replace(/^\//, '').split('?')[0].replace(/\/+$/, '');
+    if (rawPath === 'category/central-government-jobs') {
+      routerNavigate('/category/central-jobs', { replace: true });
+    }
+
     const handleHashMigration = () => {
       const hash = window.location.hash;
       if (!hash) return;
@@ -207,7 +217,8 @@ export default function App() {
         routerNavigate(`/job/${slug}`, { replace: true });
       } else if (clean.startsWith('category/')) {
         const slug = clean.replace(/^category\//, '');
-        routerNavigate(`/category/${slug}`, { replace: true });
+        const normalizedSlug = slug === 'central-government-jobs' ? 'central-jobs' : slug;
+        routerNavigate(`/category/${normalizedSlug}`, { replace: true });
       } else if (['jobs', 'admit-cards', 'results', 'answer-keys', 'categories', 'admin', 'about', 'contact', 'privacy-policy', 'terms-and-conditions', 'disclaimer', 'advertisement', 'sitemap', 'search'].includes(clean.split('?')[0])) {
         routerNavigate(`/${clean}`, { replace: true });
       } else if (clean === 'home' || clean === '') {
@@ -218,7 +229,7 @@ export default function App() {
     handleHashMigration();
     window.addEventListener('hashchange', handleHashMigration);
     return () => window.removeEventListener('hashchange', handleHashMigration);
-  }, [routerNavigate]);
+  }, [location.pathname, routerNavigate]);
 
   // Sync Firebase Auth Password Reset action code from URL (search params or hash)
   useEffect(() => {
@@ -588,19 +599,12 @@ export default function App() {
       const post = posts.find(p => p.slug === slug || p.id === slug);
       if (!post) {
         return (
-          <div className="max-w-xl mx-auto my-16 p-8 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-800">विज्ञप्ति नहीं मिली (Post Not Found)</h2>
-            <p className="text-xs text-slate-500 mt-2">
-              संभवतः यह पोस्ट हटा दी गई है या लिंक अमान्य है।
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate('home')}
-              className="mt-4 px-4 py-2 bg-blue-700 text-white font-bold text-xs rounded-lg cursor-pointer"
-            >
-              होमपेज पर वापस जाएं
-            </button>
-          </div>
+          <NotFoundView
+            posts={publishedPosts}
+            categories={categories}
+            onNavigate={navigate}
+            onSelectPost={handleSelectPost}
+          />
         );
       }
 
@@ -625,6 +629,7 @@ export default function App() {
           posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
+          canonicalPath="jobs"
           initialPostType="job"
           pageTitle="मध्य प्रदेश नवीनतम सरकारी नौकरियां (MP Latest Jobs 2026)"
           onNavigate={navigate}
@@ -640,6 +645,7 @@ export default function App() {
           posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
+          canonicalPath="admit-cards"
           initialPostType="admit_card"
           pageTitle="मध्य प्रदेश प्रवेश पत्र (MP Admit Card 2026)"
           onNavigate={navigate}
@@ -655,6 +661,7 @@ export default function App() {
           posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
+          canonicalPath="results"
           initialPostType="result"
           pageTitle="मध्य प्रदेश परीक्षा परिणाम (MP Sarkari Results 2026)"
           onNavigate={navigate}
@@ -670,6 +677,7 @@ export default function App() {
           posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
+          canonicalPath="answer-keys"
           initialPostType="answer_key"
           pageTitle="मध्य प्रदेश उत्तर कुंजी (MP Answer Key 2026)"
           onNavigate={navigate}
@@ -687,6 +695,7 @@ export default function App() {
           posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
+          canonicalPath={currentRoute}
           initialCategorySlug={cat?.id || catSlug}
           pageTitle={`${cat?.nameHindi || 'श्रेणी'} भर्ती एवं परीक्षा अपडेट 2026`}
           onNavigate={navigate}
@@ -705,6 +714,7 @@ export default function App() {
           posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
+          canonicalPath={currentRoute}
           initialTag={displayTagName}
           pageTitle={`#${displayTagName} - संबंधित सरकारी नौकरियां एवं परीक्षा अपडेट`}
           onNavigate={navigate}
@@ -720,6 +730,7 @@ export default function App() {
           posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
+          canonicalPath="categories"
           pageTitle="समस्त श्रेणियां एवं विभाग (All MP Recruitment Categories)"
           onNavigate={navigate}
           onSelectPost={handleSelectPost}
@@ -736,6 +747,8 @@ export default function App() {
           posts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
+          canonicalPath="search"
+          noindex={true}
           pageTitle={queryParam ? `खोज परिणाम: "${queryParam}"` : "समस्त सरकारी नौकरियां एवं खोज"}
           onNavigate={navigate}
           onSelectPost={handleSelectPost}
@@ -778,15 +791,27 @@ export default function App() {
       );
     }
 
-    // Default Fallback
+    // 11. Home Page
+    if (currentRoute === 'home' || currentRoute === '') {
+      return (
+        <HomeView
+          posts={publishedPosts}
+          categories={categories}
+          adSlots={adSlots}
+          importantLinks={importantLinks}
+          settings={settings}
+          homepageSections={homepageSections}
+          onNavigate={navigate}
+          onSelectPost={handleSelectPost}
+        />
+      );
+    }
+
+    // Default Fallback: Dedicated 404 (Requirement #19 - No Soft 404)
     return (
-      <HomeView
+      <NotFoundView
         posts={publishedPosts}
         categories={categories}
-        adSlots={adSlots}
-        importantLinks={importantLinks}
-        settings={settings}
-        homepageSections={homepageSections}
         onNavigate={navigate}
         onSelectPost={handleSelectPost}
       />

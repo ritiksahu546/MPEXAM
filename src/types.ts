@@ -35,6 +35,8 @@ export interface Post {
   ageRelaxation?: string;
   applicationFee: string;
   salary: string;
+  employmentType?: string;
+  location?: string;
   selectionProcess: string;
   examPattern: string;
   syllabus: string;

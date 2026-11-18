@@ -117,11 +117,11 @@ export async function sendAdminPasswordReset(email: string): Promise<void> {
   // Determine current origin or default to production domain
   const origin = typeof window !== 'undefined' && window.location.origin 
     ? window.location.origin 
-    : 'https://mpexam.vercel.app';
+    : 'https://www.mpexamupdates.in';
 
   // ActionCodeSettings ensures the password reset link directs back to the app with oobCode and mode=resetPassword
   const actionCodeSettings: ActionCodeSettings = {
-    url: `${origin}/?mode=resetPassword`,
+    url: `${origin}/reset-password`,
     handleCodeInApp: true,
   };
 

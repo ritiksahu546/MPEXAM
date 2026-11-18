@@ -97,8 +97,8 @@ export const JobDetailView: React.FC<Props> = ({
         canonicalUrl={canonicalPathUrl}
         ogType="article"
         ogImage={post.featuredImage}
-        publishedTime={post.createdAt}
-        modifiedTime={post.updatedAt}
+        publishedTime={post.publishedAt || post.createdAt}
+        modifiedTime={post.updatedAt || post.publishedAt || post.createdAt}
         breadcrumbs={[
           { name: 'होम', item: 'https://www.mpexamupdates.in/' },
           { name: post.categoryName || 'श्रेणी', item: `https://www.mpexamupdates.in/category/${categorySlug}` },
@@ -108,11 +108,13 @@ export const JobDetailView: React.FC<Props> = ({
         jobPosting={post.postType === 'job' ? {
           title: post.title,
           description: post.excerpt || post.title,
-          datePosted: post.createdAt,
+          datePosted: post.publishedAt || post.createdAt,
           validThrough: post.applicationLastDate,
           organization: post.organization || 'Government of Madhya Pradesh',
           officialWebsite: post.officialWebsite,
-          salary: post.salary
+          location: post.location,
+          salary: post.salary,
+          employmentType: post.employmentType
         } : undefined}
       />
 
@@ -215,9 +217,9 @@ export const JobDetailView: React.FC<Props> = ({
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               <span>मध्य प्रदेश भर्ती अलर्ट सेवा</span>
             </div>
-            <h4 className="font-extrabold text-sm sm:text-base text-white">
+            <p className="font-extrabold text-sm sm:text-base text-white">
               इस भर्ती का एडमिट कार्ड व रिजल्ट सीधे अपने फोन पर पाएं!
-            </h4>
+            </p>
             <p className="text-xs text-emerald-100/80 mt-0.5">
               50,000+ अभ्यर्थी जुड़े हैं। समय पर आधिकारिक सूचना पाएं।
             </p>
@@ -685,28 +687,32 @@ export const JobDetailView: React.FC<Props> = ({
       {/* Related Posts Section */}
       {relatedPosts.length > 0 && (
         <section aria-labelledby="related-heading" className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
-          <h3 id="related-heading" className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+          <h2 id="related-heading" className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-700" />
             <span>संबंधित अन्य महत्वपूर्ण भर्तियां (Related Jobs & Exams)</span>
-          </h3>
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {relatedPosts.slice(0, 4).map((rel) => (
-              <div
+              <a
                 key={rel.id}
-                onClick={() => onSelectPost(rel.slug)}
-                className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 cursor-pointer transition-all flex flex-col justify-between"
+                href={`/job/${rel.slug}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectPost(rel.slug);
+                }}
+                className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 cursor-pointer transition-all flex flex-col justify-between block group"
               >
                 <div>
                   <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">{rel.categoryName}</span>
-                  <h4 className="font-bold text-xs sm:text-sm text-slate-900 leading-snug line-clamp-2 mt-1">
+                  <h3 className="font-bold text-xs sm:text-sm text-slate-900 leading-snug line-clamp-2 mt-1 group-hover:text-blue-700 transition-colors">
                     {rel.titleHindi || rel.title}
-                  </h4>
+                  </h3>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2.5 pt-2 border-t border-slate-150">
                   <span>{rel.vacancy || 'विवरण देखें'}</span>
                   <span className="text-blue-700 font-bold">देखें →</span>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         </section>

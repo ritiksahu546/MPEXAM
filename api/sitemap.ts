@@ -17,7 +17,10 @@ export default async function handler(req: any, res: any) {
     res.setHeader('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=86400');
     return res.status(200).send(xml);
   } catch (error) {
-    console.error('Failed to generate dynamic sitemap:', error);
-    return res.status(500).send('<!-- Internal error generating dynamic sitemap -->');
+    console.error('[API /sitemap.xml] Server error: Firestore failed to generate live sitemap:', error);
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(500).send(
+      `500 Internal Server Error: Failed to generate live sitemap from Firestore database. ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }

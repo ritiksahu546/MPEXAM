@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && tsx scripts/build-sitemap.ts",
+    "build": "vite build && tsx scripts/build-sitemap.ts && tsx scripts/prerender.ts",
     "build:sitemap": "tsx scripts/build-sitemap.ts",
+    "prerender": "tsx scripts/prerender.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"

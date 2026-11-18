@@ -26,6 +26,8 @@ interface Props {
   initialPostType?: string;
   initialTag?: string;
   pageTitle?: string;
+  canonicalPath?: string;
+  noindex?: boolean;
   onNavigate: (route: string) => void;
   onSelectPost: (slug: string) => void;
 }
@@ -40,6 +42,8 @@ export const JobsListView: React.FC<Props> = ({
   initialPostType,
   initialTag,
   pageTitle = 'मध्य प्रदेश सरकारी नौकरियां एवं परीक्षा अपडेट 2026',
+  canonicalPath,
+  noindex = false,
   onNavigate,
   onSelectPost
 }) => {
@@ -156,6 +160,10 @@ export const JobsListView: React.FC<Props> = ({
 
   const getAd = (key: string) => findAdSlot(adSlots, key);
 
+  const computedCanonical = canonicalPath 
+    ? `https://www.mpexamupdates.in/${canonicalPath.replace(/^\/+/, '')}`
+    : `https://www.mpexamupdates.in/${activeCategoryObj ? `category/${activeCategoryObj.slug}` : (initialPostType ? (initialPostType === 'job' ? 'jobs' : initialPostType === 'admit_card' ? 'admit-cards' : initialPostType === 'result' ? 'results' : initialPostType === 'answer_key' ? 'answer-keys' : initialPostType) : 'jobs')}`;
+
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-6">
       
@@ -163,7 +171,8 @@ export const JobsListView: React.FC<Props> = ({
       <SEOHead
         title={`${activeCategoryObj ? activeCategoryObj.nameHindi : pageTitle} - MP Exam Update 2026`}
         description={activeCategoryObj?.description || `${pageTitle} - मध्य प्रदेश सरकारी भर्ती, परीक्षा, प्रवेश पत्र, रिजल्ट एवं उत्तर कुंजी की नवीनतम सूची।`}
-        canonicalUrl={`https://www.mpexamupdates.in/${activeCategoryObj ? `category/${activeCategoryObj.slug}` : (initialPostType ? (initialPostType === 'job' ? 'jobs' : initialPostType === 'admit_card' ? 'admit-cards' : initialPostType === 'result' ? 'results' : initialPostType === 'answer_key' ? 'answer-keys' : initialPostType) : 'jobs')}`}
+        canonicalUrl={computedCanonical}
+        noindex={noindex}
         ogType="website"
         breadcrumbs={
           activeCategoryObj
@@ -174,7 +183,7 @@ export const JobsListView: React.FC<Props> = ({
               ]
             : [
                 { name: 'होम', item: 'https://www.mpexamupdates.in/' },
-                { name: pageTitle, item: `https://www.mpexamupdates.in/${initialPostType ? (initialPostType === 'job' ? 'jobs' : initialPostType === 'admit_card' ? 'admit-cards' : initialPostType === 'result' ? 'results' : initialPostType === 'answer_key' ? 'answer-keys' : initialPostType) : 'jobs'}` }
+                { name: pageTitle, item: computedCanonical }
               ]
         }
       />

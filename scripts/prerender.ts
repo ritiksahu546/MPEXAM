@@ -14,6 +14,7 @@ interface RouteMetadata {
   title: string;
   description: string;
   canonicalUrl: string;
+  noindex?: boolean;
   ogType?: string;
   ogImage?: string;
   jsonLd?: object;
@@ -80,16 +81,13 @@ async function fetchPublishedData(): Promise<{ posts: Post[]; categories: Catego
 
     return { posts, categories };
   } catch (err) {
-    console.warn('[Prerender] Firestore fetch note (falling back to initial dataset):', err);
+    console.error('[Prerender] Firestore fetch failed:', err);
     if (db) {
       try {
         await terminate(db);
       } catch {}
     }
-    return {
-      posts: INITIAL_POSTS.filter(p => p.status === 'published'),
-      categories: INITIAL_CATEGORIES
-    };
+    throw new Error(`[Prerender] Firestore query failed during prerendering: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
@@ -204,25 +202,61 @@ export async function runPrerender(): Promise<void> {
       description: 'MP Exam Update पर विज्ञापन देने, स्पॉन्सरशिप और ब्रांड साझेदारी के अवसर।',
       canonicalUrl: `${BASE_URL}/advertisement`,
       ogType: 'website'
+    },
+    {
+      route: 'sitemap',
+      title: 'साइटमैप (HTML Sitemap) | MP Exam Update',
+      description: 'MP Exam Update पोर्टल के सभी पेजों, श्रेणियों, भर्ती विज्ञप्तियों, रिजल्ट और एडमिट कार्ड की व्यवस्थित सूची।',
+      canonicalUrl: `${BASE_URL}/sitemap`,
+      ogType: 'website'
+    },
+    {
+      route: '404',
+      title: '404 - पृष्ठ नहीं मिला (Page Not Found) | MP Exam Update',
+      description: 'क्षमा करें, आपके द्वारा खोजा गया पृष्ठ उपलब्ध नहीं है। नवीनतम एमपी सरकारी नौकरी एवं परीक्षा अपडेट देखें।',
+      canonicalUrl: `${BASE_URL}/404`,
+      ogType: 'website',
+      noindex: true,
+      prerenderHtml: `
+        <div class="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+          <div class="max-w-lg w-full bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-4">
+            <h1 class="text-3xl font-black text-slate-900">404 - पृष्ठ नहीं मिला</h1>
+            <p class="text-slate-600 text-sm">आप जिस वेब पते (URL) को खोलने का प्रयास कर रहे हैं, वह हटा दिया गया है या बदल दिया गया है।</p>
+            <div class="pt-4">
+              <a href="/" class="inline-block px-5 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-sm font-bold">
+                मुख्य पृष्ठ पर जाएं
+              </a>
+            </div>
+          </div>
+        </div>
+      `
     }
   ];
 
-  // 2. Category Hubs
+  // 2. Category Hubs (Deduplicate by canonical slug, mapping central-government-jobs -> central-jobs)
+  const canonicalCategoriesMap = new Map<string, Category>();
   for (const cat of categories) {
     if (!cat.slug) continue;
-    const catName = cat.nameHindi || cat.nameEnglish || cat.slug;
+    const cleanSlug = cat.slug.toLowerCase().trim() === 'central-government-jobs' ? 'central-jobs' : cat.slug.toLowerCase().trim();
+    if (!canonicalCategoriesMap.has(cleanSlug)) {
+      canonicalCategoriesMap.set(cleanSlug, { ...cat, slug: cleanSlug });
+    }
+  }
+
+  for (const [canonicalSlug, cat] of canonicalCategoriesMap.entries()) {
+    const catName = cat.nameHindi || cat.nameEnglish || canonicalSlug;
     routes.push({
-      route: `category/${cat.slug}`,
+      route: `category/${canonicalSlug}`,
       title: `${catName} 2026 - नवीनतम भर्ती, प्रवेश पत्र व परिणाम | MP Exam Update`,
       description: `${cat.description || catName + ' से जुड़ी सभी नवीनतम सरकारी नौकरियां, ऑनलाइन आवेदन, परीक्षा तिथियां, एडमिट कार्ड और परिणाम की अपडेट।' }`,
-      canonicalUrl: `${BASE_URL}/category/${cat.slug}`,
+      canonicalUrl: `${BASE_URL}/category/${canonicalSlug}`,
       ogType: 'website',
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
         'name': catName,
         'description': cat.description || `${catName} अपडेट्स`,
-        'url': `${BASE_URL}/category/${cat.slug}`
+        'url': `${BASE_URL}/category/${canonicalSlug}`
       },
       prerenderHtml: `
         <div class="min-h-screen bg-slate-50 text-slate-900 font-sans">
@@ -237,7 +271,7 @@ export async function runPrerender(): Promise<void> {
             <p class="text-slate-600 text-sm mb-6">${cat.description || 'इस श्रेणी के सभी नवीनतम पद एवं अधिसूचनाएं'}</p>
             <div class="space-y-3">
               ${posts
-                .filter(p => p.categoryId === cat.id)
+                .filter(p => p.categoryId === cat.id || p.category === canonicalSlug || (canonicalSlug === 'central-jobs' && (p.category === 'central-government-jobs' || p.categoryId === 'central-jobs')))
                 .slice(0, 10)
                 .map(p => `
                   <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
@@ -262,45 +296,146 @@ export async function runPrerender(): Promise<void> {
     const dept = post.organization || 'मध्य प्रदेश शासन';
     const vacancies = post.vacancy || 'अधिसूचना देखें';
 
-    const jobPostingLd: any = {
+    const schemas: any[] = [];
+
+    // 1. Article schema
+    const articleLd: any = {
       '@context': 'https://schema.org',
-      '@type': post.postType === 'job' ? 'JobPosting' : 'Article',
+      '@type': 'Article',
       'headline': post.title,
       'name': post.title,
       'description': cleanSummary,
       'url': postUrl,
-      'datePosted': safeIsoDate(post.publishedAt) || safeIsoDate(post.createdAt) || new Date().toISOString(),
-      'dateModified': safeIsoDate(post.updatedAt) || safeIsoDate(post.createdAt) || new Date().toISOString()
+      'author': {
+        '@type': 'Organization',
+        'name': 'MP Exam Update Editorial Team',
+        'url': `${BASE_URL}/about`
+      },
+      'publisher': {
+        '@type': 'Organization',
+        'name': 'MP Exam Update',
+        'logo': {
+          '@type': 'ImageObject',
+          'url': `${BASE_URL}/og-banner.svg`
+        }
+      },
+      'mainEntityOfPage': {
+        '@type': 'WebPage',
+        '@id': postUrl
+      }
     };
 
+    const pubDate = safeIsoDate(post.publishedAt) || safeIsoDate(post.createdAt);
+    if (pubDate) {
+      articleLd.datePublished = pubDate;
+    }
+    const modDate = safeIsoDate(post.updatedAt) || pubDate;
+    if (modDate) {
+      articleLd.dateModified = modDate;
+    }
+    schemas.push(articleLd);
+
+    // 2. BreadcrumbList schema
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      'itemListElement': [
+        {
+          '@type': 'ListItem',
+          'position': 1,
+          'name': 'होम',
+          'item': `${BASE_URL}/`
+        },
+        {
+          '@type': 'ListItem',
+          'position': 2,
+          'name': post.categoryName || post.category || 'सरकारी भर्ती',
+          'item': `${BASE_URL}/category/${post.categoryId || 'mp-jobs'}`
+        },
+        {
+          '@type': 'ListItem',
+          'position': 3,
+          'name': post.title,
+          'item': postUrl
+        }
+      ]
+    });
+
+    // 3. JobPosting schema ONLY if post represents genuine job
     if (post.postType === 'job') {
-      jobPostingLd.employmentType = 'FULL_TIME';
-      jobPostingLd.validThrough = safeIsoDate(post.applicationLastDate);
-      jobPostingLd.hiringOrganization = {
-        '@type': 'Organization',
-        'name': dept,
-        'sameAs': BASE_URL
-      };
-      jobPostingLd.jobLocation = {
-        '@type': 'Place',
-        'address': {
-          '@type': 'PostalAddress',
-          'addressRegion': 'Madhya Pradesh',
-          'addressCountry': 'IN'
+      const jobLd: any = {
+        '@context': 'https://schema.org',
+        '@type': 'JobPosting',
+        'title': post.title,
+        'description': cleanSummary,
+        'hiringOrganization': {
+          '@type': 'Organization',
+          'name': dept
         }
       };
+
+      if (post.officialWebsite && post.officialWebsite.startsWith('http') && !post.officialWebsite.includes('mpexamupdates.in')) {
+        jobLd.hiringOrganization.sameAs = post.officialWebsite;
+      }
+
+      if (pubDate) {
+        jobLd.datePosted = pubDate.split('T')[0];
+      }
+
+      const validThroughDate = safeIsoDate(post.applicationLastDate);
+      if (validThroughDate) {
+        jobLd.validThrough = validThroughDate.split('T')[0];
+      }
+
+      if (post.employmentType) {
+        jobLd.employmentType = post.employmentType;
+      }
+
+      if (post.location) {
+        jobLd.jobLocation = {
+          '@type': 'Place',
+          'address': {
+            '@type': 'PostalAddress',
+            'addressRegion': post.location,
+            'addressCountry': 'IN'
+          }
+        };
+      }
+
       if (post.salary) {
-        jobPostingLd.baseSalary = {
+        jobLd.baseSalary = {
           '@type': 'MonetaryAmount',
           'currency': 'INR',
           'value': {
             '@type': 'QuantitativeValue',
-            'value': post.salary,
-            'unitText': 'MONTH'
+            'value': post.salary
           }
         };
       }
+
+      schemas.push(jobLd);
     }
+
+    // 4. FAQ schema if valid FAQs present
+    if (post.faqs && post.faqs.length > 0) {
+      const validFaqs = post.faqs.filter((f: any) => f.question?.trim() && f.answer?.trim());
+      if (validFaqs.length > 0) {
+        schemas.push({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          'mainEntity': validFaqs.map((f: any) => ({
+            '@type': 'Question',
+            'name': f.question,
+            'acceptedAnswer': {
+              '@type': 'Answer',
+              'text': f.answer
+            }
+          }))
+        });
+      }
+    }
+
+    const postJsonLd = schemas.length === 1 ? schemas[0] : schemas;
 
     const prerenderArticleHtml = `
       <div class="min-h-screen bg-slate-50 text-slate-900 font-sans">
@@ -352,7 +487,7 @@ export async function runPrerender(): Promise<void> {
       description: cleanSummary,
       canonicalUrl: postUrl,
       ogType: 'article',
-      jsonLd: jobPostingLd,
+      jsonLd: postJsonLd,
       prerenderHtml: prerenderArticleHtml
     });
   }
@@ -417,6 +552,15 @@ export async function runPrerender(): Promise<void> {
       html = html.replace(/<div id="root">[\s\S]*?<\/div>/i, `<div id="root">${meta.prerenderHtml}</div>`);
     }
 
+    // 7. Robots directive for noindex routes (e.g. 404)
+    if (meta.noindex) {
+      if (html.includes('<meta name="robots"')) {
+        html = html.replace(/<meta\s+name="robots"\s+content="[^"]*"\s*\/?>/i, '<meta name="robots" content="noindex, follow">');
+      } else {
+        html = html.replace('</head>', '  <meta name="robots" content="noindex, follow">\n</head>');
+      }
+    }
+
     // Determine target file path
     const targetDir = meta.route ? path.resolve(distDir, meta.route) : distDir;
     if (!fs.existsSync(targetDir)) {
@@ -424,6 +568,9 @@ export async function runPrerender(): Promise<void> {
     }
     const targetFile = path.resolve(targetDir, 'index.html');
     fs.writeFileSync(targetFile, html, 'utf-8');
+    if (meta.route === '404') {
+      fs.writeFileSync(path.resolve(distDir, '404.html'), html, 'utf-8');
+    }
     generatedCount++;
   }
 

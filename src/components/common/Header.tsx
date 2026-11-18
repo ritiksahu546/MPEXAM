@@ -142,9 +142,14 @@ export const Header: React.FC<Props> = ({
           </button>
 
           {/* Logo */}
-          <div 
-            onClick={() => handleNav('home')}
+          <a 
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNav('home');
+            }}
             className="cursor-pointer flex items-center gap-2.5 sm:gap-3 min-w-0 select-none group"
+            title={settings.siteName || 'MP Exam Update'}
           >
             {settings.logoUrl || settings.logo ? (
               <img
@@ -152,6 +157,7 @@ export const Header: React.FC<Props> = ({
                 alt={settings.siteName || 'MP Exam Update'}
                 className="h-10 sm:h-12 w-auto max-w-[150px] sm:max-w-[210px] object-contain rounded-xl group-hover:scale-102 transition-transform shrink-0"
                 referrerPolicy="no-referrer"
+                decoding="async"
               />
             ) : (
               <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-blue-800 via-blue-700 to-indigo-600 text-white flex items-center justify-center font-black text-base sm:text-lg shadow-sm border border-blue-900/20 group-hover:scale-105 transition-transform shrink-0">
@@ -171,7 +177,7 @@ export const Header: React.FC<Props> = ({
                 {settings.siteTagline || 'मध्य प्रदेश सरकारी नौकरी एवं परीक्षा पोर्टल'}
               </p>
             </div>
-          </div>
+          </a>
         </div>
 
         {/* Quick Search trigger & Telegram action on desktop */}
