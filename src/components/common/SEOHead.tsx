@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { DEFAULT_BASE_URL, normalizeCanonicalUrl } from '../../utils/sitemapGenerator';
 
 export interface BreadcrumbItem {
   name: string;
@@ -35,7 +36,7 @@ export interface SEOProps {
   };
 }
 
-function parseIsoDateOnly(input?: string): string | undefined {
+export function parseIsoDateOnly(input?: string): string | undefined {
   if (!input) return undefined;
   const trimmed = input.trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
@@ -50,19 +51,37 @@ function parseIsoDateOnly(input?: string): string | undefined {
   }
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
-    return parsed.toISOString().split('T')[0];
+    const year = parsed.getUTCFullYear();
+    if (year >= 2000 && year <= 2099) {
+      return parsed.toISOString().split('T')[0];
+    }
   }
   return undefined;
 }
 
-function parseIsoDateTime(input?: string): string | undefined {
+export function parseIsoDateTime(input?: string): string | undefined {
   if (!input) return undefined;
   const trimmed = input.trim();
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
-    return parsed.toISOString();
+    const year = parsed.getUTCFullYear();
+    if (year >= 2000 && year <= 2099) {
+      return parsed.toISOString();
+    }
+  }
+  const dateOnly = parseIsoDateOnly(trimmed);
+  if (dateOnly) {
+    return `${dateOnly}T00:00:00.000Z`;
   }
   return undefined;
+}
+
+export function isJobDateExpired(dateInput?: string): boolean {
+  const isoDate = parseIsoDateOnly(dateInput);
+  if (!isoDate) return false;
+  const expiryTime = new Date(`${isoDate}T23:59:59.999Z`).getTime();
+  if (isNaN(expiryTime)) return false;
+  return expiryTime < Date.now();
 }
 
 export const SEOHead: React.FC<SEOProps> = ({
@@ -72,7 +91,7 @@ export const SEOHead: React.FC<SEOProps> = ({
   canonicalUrl,
   noindex = false,
   ogType = 'website',
-  ogImage = 'https://www.mpexamupdates.in/og-banner.svg',
+  ogImage = `${DEFAULT_BASE_URL}/og-banner.svg`,
   publishedTime,
   modifiedTime,
   breadcrumbs,
@@ -122,15 +141,15 @@ export const SEOHead: React.FC<SEOProps> = ({
       setMeta('name', 'keywords', keywords);
     }
 
-    // 4. Canonical URL (Never contain hash, normalize trailing slashes)
-    let rawUrl = canonicalUrl || (typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'https://www.mpexamupdates.in');
-    rawUrl = rawUrl.split('#')[0].split('?')[0];
-    // Keep trailing slash only for domain root
-    if (rawUrl.endsWith('/') && !rawUrl.match(/^https?:\/\/[^\/]+\/$/)) {
-      rawUrl = rawUrl.replace(/\/+$/, '');
-    }
-    const currentUrl = rawUrl;
+    // 4. Canonical URL (Always normalize to https://mpexamupdates.in non-www, no hash/query)
+    const fallbackPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+    const currentUrl = normalizeCanonicalUrl(canonicalUrl || `${DEFAULT_BASE_URL}${fallbackPath}`);
     setLink('canonical', currentUrl);
+
+    const normalizedOgImage = (ogImage || `${DEFAULT_BASE_URL}/og-banner.svg`).replace(
+      /^https?:\/\/(www\.)?mpexamupdates\.in/i,
+      DEFAULT_BASE_URL
+    );
 
     // 5. Open Graph Tags
     setMeta('property', 'og:title', formattedTitle);
@@ -138,39 +157,50 @@ export const SEOHead: React.FC<SEOProps> = ({
     setMeta('property', 'og:type', ogType);
     setMeta('property', 'og:url', currentUrl);
     setMeta('property', 'og:site_name', 'MP Exam Update');
-    if (ogImage) {
-      setMeta('property', 'og:image', ogImage);
-    }
+    setMeta('property', 'og:image', normalizedOgImage);
+
     if (publishedTime) {
-      setMeta('property', 'article:published_time', publishedTime);
+      const isoPub = parseIsoDateTime(publishedTime);
+      if (isoPub) setMeta('property', 'article:published_time', isoPub);
     }
     if (modifiedTime) {
-      setMeta('property', 'article:modified_time', modifiedTime);
+      const isoMod = parseIsoDateTime(modifiedTime);
+      if (isoMod) setMeta('property', 'article:modified_time', isoMod);
     }
 
-    // 5. Twitter Card Tags
+    // 6. Twitter Card Tags
     setMeta('name', 'twitter:card', 'summary_large_image');
     setMeta('name', 'twitter:title', formattedTitle);
     setMeta('name', 'twitter:description', description);
-    if (ogImage) {
-      setMeta('name', 'twitter:image', ogImage);
-    }
+    setMeta('name', 'twitter:image', normalizedOgImage);
 
-    // 6. JSON-LD Structured Data
+    // 7. JSON-LD Structured Data
     const schemas: any[] = [];
 
-    // Base WebSite schema on homepage
+    // Base WebSite & Organization schema on website pages
     if (ogType === 'website') {
       schemas.push({
         '@context': 'https://schema.org',
         '@type': 'WebSite',
+        '@id': `${DEFAULT_BASE_URL}/#website`,
         name: 'MP Exam Update',
-        url: 'https://www.mpexamupdates.in',
+        url: `${DEFAULT_BASE_URL}/`,
         description: 'मध्य प्रदेश सरकारी नौकरी, MPPSC, MPESB, एडमिट कार्ड, रिजल्ट और परीक्षा पोर्टल',
         potentialAction: {
           '@type': 'SearchAction',
-          target: 'https://www.mpexamupdates.in/search?q={search_term_string}',
+          target: `${DEFAULT_BASE_URL}/search?q={search_term_string}`,
           'query-input': 'required name=search_term_string'
+        }
+      });
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        '@id': `${DEFAULT_BASE_URL}/#organization`,
+        name: 'MP Exam Update',
+        url: `${DEFAULT_BASE_URL}/`,
+        logo: {
+          '@type': 'ImageObject',
+          url: `${DEFAULT_BASE_URL}/favicon.svg`
         }
       });
     }
@@ -182,17 +212,19 @@ export const SEOHead: React.FC<SEOProps> = ({
         '@type': 'Article',
         headline: title,
         description: description,
+        url: currentUrl,
         author: {
           '@type': 'Organization',
           name: 'MP Exam Update Editorial Team',
-          url: 'https://www.mpexamupdates.in/about'
+          url: `${DEFAULT_BASE_URL}/about`
         },
         publisher: {
           '@type': 'Organization',
           name: 'MP Exam Update',
+          url: `${DEFAULT_BASE_URL}/`,
           logo: {
             '@type': 'ImageObject',
-            url: 'https://www.mpexamupdates.in/og-banner.svg'
+            url: `${DEFAULT_BASE_URL}/og-banner.svg`
           }
         },
         mainEntityOfPage: {
@@ -201,8 +233,8 @@ export const SEOHead: React.FC<SEOProps> = ({
         }
       };
 
-      if (ogImage) {
-        articleSchema.image = [ogImage];
+      if (normalizedOgImage) {
+        articleSchema.image = [normalizedOgImage];
       }
 
       const isoPublished = parseIsoDateTime(publishedTime);
@@ -227,12 +259,12 @@ export const SEOHead: React.FC<SEOProps> = ({
           '@type': 'ListItem',
           position: idx + 1,
           name: b.name,
-          item: b.item
+          item: normalizeCanonicalUrl(b.item)
         }))
       });
     }
 
-    // FAQ schema
+    // FAQ schema (only for genuine visible FAQs)
     if (faqs && faqs.length > 0) {
       const validFaqs = faqs.filter(f => f.question?.trim() && f.answer?.trim());
       if (validFaqs.length > 0) {
@@ -241,18 +273,18 @@ export const SEOHead: React.FC<SEOProps> = ({
           '@type': 'FAQPage',
           mainEntity: validFaqs.map(f => ({
             '@type': 'Question',
-            name: f.question,
+            name: f.question.trim(),
             acceptedAnswer: {
               '@type': 'Answer',
-              text: f.answer
+              text: f.answer.trim()
             }
           }))
         });
       }
     }
 
-    // JobPosting schema ONLY if genuine job and valid data exists
-    if (jobPosting && jobPosting.title && jobPosting.organization) {
+    // JobPosting schema ONLY if genuine active job and not expired
+    if (jobPosting && jobPosting.title && jobPosting.organization && !isJobDateExpired(jobPosting.validThrough)) {
       const jobSchema: Record<string, any> = {
         '@context': 'https://schema.org',
         '@type': 'JobPosting',
@@ -261,12 +293,20 @@ export const SEOHead: React.FC<SEOProps> = ({
         hiringOrganization: {
           '@type': 'Organization',
           name: jobPosting.organization
+        },
+        jobLocation: {
+          '@type': 'Place',
+          address: {
+            '@type': 'PostalAddress',
+            addressRegion: jobPosting.location || 'Madhya Pradesh',
+            addressCountry: 'IN'
+          }
         }
       };
 
       if (
-        jobPosting.officialWebsite && 
-        jobPosting.officialWebsite.startsWith('http') && 
+        jobPosting.officialWebsite &&
+        jobPosting.officialWebsite.startsWith('http') &&
         !jobPosting.officialWebsite.includes('mpexamupdates.in')
       ) {
         jobSchema.hiringOrganization.sameAs = jobPosting.officialWebsite;
@@ -286,32 +326,10 @@ export const SEOHead: React.FC<SEOProps> = ({
         jobSchema.employmentType = jobPosting.employmentType;
       }
 
-      if (jobPosting.location) {
-        jobSchema.jobLocation = {
-          '@type': 'Place',
-          address: {
-            '@type': 'PostalAddress',
-            addressRegion: jobPosting.location,
-            addressCountry: 'IN'
-          }
-        };
-      }
-
-      if (jobPosting.salary) {
-        jobSchema.baseSalary = {
-          '@type': 'MonetaryAmount',
-          currency: 'INR',
-          value: {
-            '@type': 'QuantitativeValue',
-            value: jobPosting.salary
-          }
-        };
-      }
-
       schemas.push(jobSchema);
     }
 
-    // Inject Script element
+    // Update or create the single #seo-json-ld script element
     let scriptTag = document.getElementById('seo-json-ld') as HTMLScriptElement | null;
     if (!scriptTag) {
       scriptTag = document.createElement('script');
@@ -320,15 +338,7 @@ export const SEOHead: React.FC<SEOProps> = ({
       document.head.appendChild(scriptTag);
     }
     scriptTag.text = JSON.stringify(schemas.length === 1 ? schemas[0] : schemas);
-
-    return () => {
-      // Clean up script on unmount
-      const existing = document.getElementById('seo-json-ld');
-      if (existing) {
-        existing.remove();
-      }
-    };
-  }, [title, description, keywords, canonicalUrl, ogType, ogImage, publishedTime, modifiedTime, breadcrumbs, faqs, jobPosting]);
+  }, [title, description, keywords, canonicalUrl, noindex, ogType, ogImage, publishedTime, modifiedTime, breadcrumbs, faqs, jobPosting]);
 
   return null;
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { SiteSettings, Category, ImportantLink } from '../../types';
-import { ShieldAlert, Heart, Send, MessageCircle, Youtube, Facebook, Mail, ExternalLink, ArrowUp } from 'lucide-react';
+import { ShieldAlert, Send, MessageCircle, Youtube, Facebook, Mail, ExternalLink, ArrowUp } from 'lucide-react';
+import { normalizeCategorySlug } from '../../utils/sitemapGenerator';
 
 interface Props {
   settings: SiteSettings;
@@ -14,7 +15,17 @@ export const Footer: React.FC<Props> = ({ settings, categories, importantLinks =
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const activeCategories = categories.filter(c => c.active !== false).slice(0, 8);
+  // Deduplicate active categories by canonical slug
+  const uniqueCategories: Category[] = [];
+  const seenSlugs = new Set<string>();
+  for (const cat of categories) {
+    if (!cat || cat.active === false) continue;
+    const slug = normalizeCategorySlug(cat.slug);
+    if (!slug || seenSlugs.has(slug)) continue;
+    seenSlugs.add(slug);
+    uniqueCategories.push({ ...cat, slug });
+  }
+  const activeCategories = uniqueCategories.slice(0, 10);
   const activeLinks = (importantLinks.length > 0 ? importantLinks.filter(l => l.active !== false) : []).slice(0, 8);
 
   const telegramUrl = settings.socialLinks?.telegram || settings.telegramLink;
@@ -29,11 +40,22 @@ export const Footer: React.FC<Props> = ({ settings, categories, importantLinks =
           
           {/* Column 1: Portal Overview */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate('home');
+              }}
+              className="flex items-center gap-2"
+            >
               {settings.logoUrl || settings.logo ? (
                 <img
                   src={settings.logoUrl || settings.logo}
                   alt={settings.siteName || 'MP Exam Update'}
+                  width={130}
+                  height={36}
+                  loading="lazy"
+                  decoding="async"
                   className="h-9 w-auto max-w-[130px] object-contain rounded-lg"
                   referrerPolicy="no-referrer"
                 />
@@ -46,10 +68,51 @@ export const Footer: React.FC<Props> = ({ settings, categories, importantLinks =
                 <span className="text-lg font-black text-white tracking-tight">{settings.siteName || 'MP Exam Update'}</span>
                 <p className="text-[11px] text-amber-400 font-medium">{settings.siteTagline || 'मध्य प्रदेश भर्ती व परीक्षा पोर्टल'}</p>
               </div>
-            </div>
+            </a>
             <p className="text-xs text-slate-400 leading-relaxed">
               {settings.siteDescription || settings.description}
             </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-400">
+              <a
+                href="/jobs"
+                onClick={(e) => { e.preventDefault(); onNavigate('jobs'); }}
+                className="hover:text-amber-300 underline"
+              >
+                नवीनतम नौकरियां
+              </a>
+              <span>•</span>
+              <a
+                href="/admit-cards"
+                onClick={(e) => { e.preventDefault(); onNavigate('admit-cards'); }}
+                className="hover:text-amber-300 underline"
+              >
+                एडमिट कार्ड
+              </a>
+              <span>•</span>
+              <a
+                href="/results"
+                onClick={(e) => { e.preventDefault(); onNavigate('results'); }}
+                className="hover:text-amber-300 underline"
+              >
+                परीक्षा परिणाम
+              </a>
+              <span>•</span>
+              <a
+                href="/answer-keys"
+                onClick={(e) => { e.preventDefault(); onNavigate('answer-keys'); }}
+                className="hover:text-amber-300 underline"
+              >
+                उत्तर कुंजी
+              </a>
+              <span>•</span>
+              <a
+                href="/categories"
+                onClick={(e) => { e.preventDefault(); onNavigate('categories'); }}
+                className="hover:text-amber-300 underline"
+              >
+                सभी श्रेणियां
+              </a>
+            </div>
             <div className="flex items-center gap-3 pt-2">
               {telegramUrl && (
                 <a
@@ -115,14 +178,18 @@ export const Footer: React.FC<Props> = ({ settings, categories, importantLinks =
             </h4>
             <ul className="space-y-2 text-xs text-slate-400">
               {activeCategories.map((cat) => (
-                <li key={cat.id}>
-                  <button
-                    onClick={() => onNavigate(`category/${cat.slug}`)}
+                <li key={cat.slug}>
+                  <a
+                    href={`/category/${cat.slug}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onNavigate(`category/${cat.slug}`);
+                    }}
                     className="hover:text-amber-300 transition-colors flex items-center gap-1.5"
                   >
                     <span>›</span>
                     <span>{cat.nameHindi}</span>
-                  </button>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -169,25 +236,25 @@ export const Footer: React.FC<Props> = ({ settings, categories, importantLinks =
             </h4>
             <ul className="space-y-2 text-xs text-slate-400">
               <li>
-                <button onClick={() => onNavigate('about')} className="hover:text-white">हमारे बारे में (About Us)</button>
+                <a href="/about" onClick={(e) => { e.preventDefault(); onNavigate('about'); }} className="hover:text-white">हमारे बारे में (About Us)</a>
               </li>
               <li>
-                <button onClick={() => onNavigate('contact')} className="hover:text-white">संपर्क करें (Contact Us)</button>
+                <a href="/contact" onClick={(e) => { e.preventDefault(); onNavigate('contact'); }} className="hover:text-white">संपर्क करें (Contact Us)</a>
               </li>
               <li>
-                <button onClick={() => onNavigate('privacy-policy')} className="hover:text-white">गोपनीयता नीति (Privacy Policy)</button>
+                <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); onNavigate('privacy-policy'); }} className="hover:text-white">गोपनीयता नीति (Privacy Policy)</a>
               </li>
               <li>
-                <button onClick={() => onNavigate('terms-and-conditions')} className="hover:text-white">नियम व शर्तें (Terms & Conditions)</button>
+                <a href="/terms-and-conditions" onClick={(e) => { e.preventDefault(); onNavigate('terms-and-conditions'); }} className="hover:text-white">नियम व शर्तें (Terms &amp; Conditions)</a>
               </li>
               <li>
-                <button onClick={() => onNavigate('disclaimer')} className="hover:text-white">अस्वीकरण (Disclaimer)</button>
+                <a href="/disclaimer" onClick={(e) => { e.preventDefault(); onNavigate('disclaimer'); }} className="hover:text-white">अस्वीकरण (Disclaimer)</a>
               </li>
               <li>
-                <button onClick={() => onNavigate('advertisement')} className="hover:text-white">विज्ञापन नीति (Advertisement)</button>
+                <a href="/advertisement" onClick={(e) => { e.preventDefault(); onNavigate('advertisement'); }} className="hover:text-white">विज्ञापन नीति (Advertisement)</a>
               </li>
               <li>
-                <button onClick={() => onNavigate('sitemap')} className="hover:text-white">साइटमैप (Sitemap.xml)</button>
+                <a href="/sitemap" onClick={(e) => { e.preventDefault(); onNavigate('sitemap'); }} className="hover:text-white">साइटमैप (Sitemap)</a>
               </li>
             </ul>
           </div>

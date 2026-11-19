@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { SiteSettings, Category } from '../../types';
 import { getSavedJobsCount, BOOKMARKS_EVENT } from '../../utils/bookmarks';
+import { normalizeCategorySlug } from '../../utils/sitemapGenerator';
 
 interface Props {
   currentRoute: string;
@@ -58,22 +59,26 @@ export const Header: React.FC<Props> = ({
   };
 
   const baseLinks = [
-    { label: 'होम', route: 'home' },
-    { label: 'सरकारी नौकरी', route: 'jobs' },
-    { label: 'एडमिट कार्ड', route: 'admit-cards' },
-    { label: 'रिजल्ट', route: 'results' },
-    { label: 'उत्तर कुंजी', route: 'answer-keys' },
-    { label: 'सुरक्षित नौकरियां', route: 'saved-jobs' },
+    { label: 'होम', route: 'home', href: '/' },
+    { label: 'सरकारी नौकरी', route: 'jobs', href: '/jobs' },
+    { label: 'एडमिट कार्ड', route: 'admit-cards', href: '/admit-cards' },
+    { label: 'रिजल्ट', route: 'results', href: '/results' },
+    { label: 'उत्तर कुंजी', route: 'answer-keys', href: '/answer-keys' },
+    { label: 'सभी श्रेणियां', route: 'categories', href: '/categories' },
   ];
 
   // Dynamic category links from active categories
   const activeNavCategories = categories
     .filter(c => c.active !== false)
     .slice(0, 4)
-    .map(c => ({
-      label: c.nameHindi || c.nameEnglish || (c as any).name || c.slug,
-      route: `category/${c.slug}`
-    }));
+    .map(c => {
+      const slug = normalizeCategorySlug(c.slug);
+      return {
+        label: c.nameHindi || c.nameEnglish || (c as any).name || slug,
+        route: `category/${slug}`,
+        href: `/category/${slug}`
+      };
+    });
 
   const telegramUrl = settings.socialLinks?.telegram || settings.telegramLink || 'https://t.me/mpexamupdates';
   const whatsappUrl = settings.socialLinks?.whatsapp || settings.whatsappLink || 'https://whatsapp.com/channel/mpexamupdates';
@@ -81,9 +86,9 @@ export const Header: React.FC<Props> = ({
   const navLinks = [
     ...baseLinks,
     ...(activeNavCategories.length > 0 ? activeNavCategories : [
-      { label: 'MPPSC', route: 'category/mppsc' },
-      { label: 'MPESB व्यापम', route: 'category/mpesb' },
-      { label: 'सरकारी योजनाएँ', route: 'category/sarkari-yojana' }
+      { label: 'MPPSC', route: 'category/mppsc', href: '/category/mppsc' },
+      { label: 'MPESB व्यापम', route: 'category/mpesb', href: '/category/mpesb' },
+      { label: 'सरकारी योजनाएँ', route: 'category/sarkari-yojana', href: '/category/sarkari-yojana' }
     ])
   ];
 
@@ -155,6 +160,8 @@ export const Header: React.FC<Props> = ({
               <img
                 src={settings.logoUrl || settings.logo}
                 alt={settings.siteName || 'MP Exam Update'}
+                width={150}
+                height={48}
                 className="h-10 sm:h-12 w-auto max-w-[150px] sm:max-w-[210px] object-contain rounded-xl group-hover:scale-102 transition-transform shrink-0"
                 referrerPolicy="no-referrer"
                 decoding="async"
@@ -238,8 +245,12 @@ export const Header: React.FC<Props> = ({
               const active = currentRoute === link.route || (link.route !== 'home' && currentRoute.startsWith(link.route));
               return (
                 <li key={link.route}>
-                  <button
-                    onClick={() => handleNav(link.route)}
+                  <a
+                    href={link.href}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNav(link.route);
+                    }}
                     className={`px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center gap-1 whitespace-nowrap cursor-pointer ${
                       active
                         ? 'bg-blue-950 text-amber-300 border-b-2 border-amber-400'
@@ -247,20 +258,24 @@ export const Header: React.FC<Props> = ({
                     }`}
                   >
                     <span>{link.label}</span>
-                  </button>
+                  </a>
                 </li>
               );
             })}
           </ul>
 
           <div className="flex items-center gap-2 text-xs">
-            <button
-              onClick={() => handleNav('category/mppsc')}
+            <a
+              href="/category/mppsc"
+              onClick={(e) => {
+                e.preventDefault();
+                handleNav('category/mppsc');
+              }}
               className="bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-bold px-3 py-1 rounded-lg text-xs transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
               <Award className="w-3.5 h-3.5" />
               <span>MPPSC 2026</span>
-            </button>
+            </a>
           </div>
         </div>
       </nav>
@@ -297,14 +312,18 @@ export const Header: React.FC<Props> = ({
 
             <div className="divide-y divide-slate-100 font-medium text-sm">
               {navLinks.map((link) => (
-                <button
+                <a
                   key={link.route}
-                  onClick={() => handleNav(link.route)}
+                  href={link.href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNav(link.route);
+                  }}
                   className="w-full text-left py-2.5 px-2 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
                 >
                   <span>{link.label}</span>
                   <ChevronRight className="w-4 h-4 text-slate-300" />
-                </button>
+                </a>
               ))}
               <button
                 onClick={() => handleNav('admin')}

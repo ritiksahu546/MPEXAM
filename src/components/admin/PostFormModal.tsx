@@ -1055,7 +1055,7 @@ export const PostFormModal: React.FC<Props> = ({
                     type="url"
                     value={formData.canonicalUrl || ''}
                     onChange={e => setFormData({ ...formData, canonicalUrl: e.target.value })}
-                    placeholder={`https://www.mpexamupdates.in/job/${formData.slug || ''}`}
+                    placeholder={`https://mpexamupdates.in/job/${formData.slug || ''}`}
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                 </div>

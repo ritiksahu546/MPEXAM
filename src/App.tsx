@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { 
   Post, 
   Category, 
@@ -48,13 +48,15 @@ import { SavedJobsView } from './components/views/SavedJobsView';
 import { StaticPageView } from './components/views/StaticPageView';
 import { SitemapView } from './components/views/SitemapView';
 import { NotFoundView } from './components/views/NotFoundView';
-import { AdminDashboard } from './components/admin/AdminDashboard';
-import { AdminLoginView } from './components/admin/AdminLoginView';
-import { ResetPasswordView } from './components/admin/ResetPasswordView';
 import { LoadingSkeleton } from './components/common/LoadingSkeleton';
 import { DataErrorState } from './components/common/DataErrorState';
 import { INITIAL_SITE_SETTINGS } from './data/initialData';
+import { normalizeCategorySlug, doesPostMatchCategory } from './utils/sitemapGenerator';
 import { useLocation, useNavigate } from 'react-router-dom';
+
+const AdminDashboard = React.lazy(() => import('./components/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AdminLoginView = React.lazy(() => import('./components/admin/AdminLoginView').then(m => ({ default: m.AdminLoginView })));
+const ResetPasswordView = React.lazy(() => import('./components/admin/ResetPasswordView').then(m => ({ default: m.ResetPasswordView })));
 
 /**
  * Extracts Firebase password reset action code (oobCode) from either URL search parameters or hash.
@@ -187,18 +189,28 @@ export default function App() {
   const currentRoute = useMemo(() => {
     const rawPath = location.pathname.replace(/^\//, '');
     let cleanPath = rawPath.split('?')[0].replace(/\/+$/, '');
-    if (cleanPath === 'category/central-government-jobs') {
-      cleanPath = 'category/central-jobs';
+    if (cleanPath.startsWith('category/')) {
+      const slug = cleanPath.replace(/^category\//, '');
+      cleanPath = `category/${normalizeCategorySlug(slug)}`;
     }
     return cleanPath || 'home';
   }, [location.pathname]);
 
-  // Backward Compatibility: Automatically redirect legacy hash URLs to proper clean paths
+  // Enforce non-www domain and normalize legacy category & hash URLs
   useEffect(() => {
-    // Also redirect legacy canonical category path if accessed directly
+    if (typeof window !== 'undefined' && window.location.hostname === 'www.mpexamupdates.in') {
+      window.location.replace(`https://mpexamupdates.in${window.location.pathname}${window.location.search}${window.location.hash}`);
+      return;
+    }
+
+    // Redirect legacy canonical category path if accessed directly
     const rawPath = location.pathname.replace(/^\//, '').split('?')[0].replace(/\/+$/, '');
-    if (rawPath === 'category/central-government-jobs') {
-      routerNavigate('/category/central-jobs', { replace: true });
+    if (rawPath.startsWith('category/')) {
+      const slug = rawPath.replace(/^category\//, '');
+      const normalized = normalizeCategorySlug(slug);
+      if (normalized && normalized !== slug.toLowerCase()) {
+        routerNavigate(`/category/${normalized}`, { replace: true });
+      }
     }
 
     const handleHashMigration = () => {
@@ -217,7 +229,7 @@ export default function App() {
         routerNavigate(`/job/${slug}`, { replace: true });
       } else if (clean.startsWith('category/')) {
         const slug = clean.replace(/^category\//, '');
-        const normalizedSlug = slug === 'central-government-jobs' ? 'central-jobs' : slug;
+        const normalizedSlug = normalizeCategorySlug(slug);
         routerNavigate(`/category/${normalizedSlug}`, { replace: true });
       } else if (['jobs', 'admit-cards', 'results', 'answer-keys', 'categories', 'admin', 'about', 'contact', 'privacy-policy', 'terms-and-conditions', 'disclaimer', 'advertisement', 'sitemap', 'search'].includes(clean.split('?')[0])) {
         routerNavigate(`/${clean}`, { replace: true });
@@ -501,21 +513,23 @@ export default function App() {
     // 1. Password Reset View (Firebase Auth Action Code)
     if (currentRoute === 'reset-password') {
       return (
-        <ResetPasswordView
-          oobCode={resetCode}
-          onSuccess={() => {
-            setResetCode('');
-            navigate('admin');
-          }}
-          onCancel={() => {
-            setResetCode('');
-            navigate('admin');
-          }}
-          onRequestNewLink={() => {
-            setResetCode('');
-            navigate('admin');
-          }}
-        />
+        <Suspense fallback={<LoadingSkeleton />}>
+          <ResetPasswordView
+            oobCode={resetCode}
+            onSuccess={() => {
+              setResetCode('');
+              navigate('admin');
+            }}
+            onCancel={() => {
+              setResetCode('');
+              navigate('admin');
+            }}
+            onRequestNewLink={() => {
+              setResetCode('');
+              navigate('admin');
+            }}
+          />
+        </Suspense>
       );
     }
 
@@ -523,46 +537,61 @@ export default function App() {
     if (currentRoute === 'admin') {
       if (!currentUser) {
         return (
-          <AdminLoginView
-            settings={settings}
-            onSuccess={handleLogin}
-            onNavigateHome={() => navigate('home')}
-          />
+          <Suspense fallback={<LoadingSkeleton />}>
+            <AdminLoginView
+              settings={settings}
+              onSuccess={handleLogin}
+              onNavigateHome={() => navigate('home')}
+            />
+          </Suspense>
         );
       }
 
       return (
-        <AdminDashboard
-          posts={posts}
-          categories={categories}
-          tags={tags}
-          adSlots={adSlots}
-          importantLinks={importantLinks}
+        <Suspense fallback={<LoadingSkeleton />}>
+          <AdminDashboard
+            posts={posts}
+            categories={categories}
+            tags={tags}
+            adSlots={adSlots}
+            importantLinks={importantLinks}
+            settings={settings}
+            homepageSections={homepageSections}
+            currentUser={currentUser}
+            onLogin={handleLogin}
+            onLogout={handleLogout}
+            onSavePost={handleSavePost}
+            onDeletePost={handleDeletePost}
+            onSaveCategory={handleSaveCategory}
+            onDeleteCategory={handleDeleteCategory}
+            onSaveTag={handleSaveTag}
+            onDeleteTag={handleDeleteTag}
+            onUpdateAdSlot={handleUpdateAdSlot}
+            onSaveImportantLink={handleSaveImportantLink}
+            onDeleteImportantLink={handleDeleteImportantLink}
+            onSaveSettings={handleSaveSettings}
+            onSaveHomepageSections={handleSaveHomepageSections}
+            onResetData={handleResetData}
+            onSeedData={handleSeedData}
+            onViewPost={handleSelectPost}
+            onNavigateHome={() => navigate('home')}
+          />
+        </Suspense>
+      );
+    }
+
+    // 2b. Static / Legal Pages do not require Firestore posts to render immediately (improves LCP/CWV)
+    if (['about', 'contact', 'privacy-policy', 'terms-and-conditions', 'disclaimer', 'advertisement'].includes(currentRoute)) {
+      return (
+        <StaticPageView
+          pageType={currentRoute as any}
           settings={settings}
-          homepageSections={homepageSections}
-          currentUser={currentUser}
-          onLogin={handleLogin}
-          onLogout={handleLogout}
-          onSavePost={handleSavePost}
-          onDeletePost={handleDeletePost}
-          onSaveCategory={handleSaveCategory}
-          onDeleteCategory={handleDeleteCategory}
-          onSaveTag={handleSaveTag}
-          onDeleteTag={handleDeleteTag}
-          onUpdateAdSlot={handleUpdateAdSlot}
-          onSaveImportantLink={handleSaveImportantLink}
-          onDeleteImportantLink={handleDeleteImportantLink}
-          onSaveSettings={handleSaveSettings}
-          onSaveHomepageSections={handleSaveHomepageSections}
-          onResetData={handleResetData}
-          onSeedData={handleSeedData}
-          onViewPost={handleSelectPost}
-          onNavigateHome={() => navigate('home')}
+          onNavigate={navigate}
         />
       );
     }
 
-    // 3. Loading State: Gate all public views while initial data is being fetched
+    // 3. Loading State: Gate data-driven public views while initial data is being fetched
     if (isLoading) {
       return <LoadingSkeleton />;
     }
@@ -608,12 +637,19 @@ export default function App() {
         );
       }
 
-      const relatedPosts = publishedPosts.filter(p => p.id !== post.id && p.categoryId === post.categoryId);
+      const categoryMatched = publishedPosts.filter(
+        p => p.id !== post.id && (p.categoryId === post.categoryId || doesPostMatchCategory(p, post.categoryId))
+      );
+      const fallbackRelated = publishedPosts.filter(
+        p => p.id !== post.id && !categoryMatched.some(c => c.id === p.id)
+      );
+      const relatedPosts = [...categoryMatched, ...fallbackRelated].slice(0, 6);
 
       return (
         <JobDetailView
           post={post}
           relatedPosts={relatedPosts}
+          allPosts={publishedPosts}
           categories={categories}
           adSlots={adSlots}
           onNavigate={navigate}

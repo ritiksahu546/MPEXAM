@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Post, Category } from '../../types';
 import { Breadcrumbs } from '../common/Breadcrumbs';
+import { SEOHead } from '../common/SEOHead';
 import { Copy, Check, Download, Globe } from 'lucide-react';
 import { generateSitemapXml, generateRobotsTxt, DEFAULT_BASE_URL } from '../../utils/sitemapGenerator';
 
@@ -14,7 +15,7 @@ export const SitemapView: React.FC<Props> = ({ posts, categories, onNavigate }) 
   const [activeTab, setActiveTab] = useState<'sitemap' | 'robots'>('sitemap');
   const [copied, setCopied] = useState(false);
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : DEFAULT_BASE_URL;
+  const baseUrl = DEFAULT_BASE_URL;
 
   // Generate XML sitemap string using shared utility
   const sitemapXml = useMemo(() => {
@@ -46,6 +47,13 @@ export const SitemapView: React.FC<Props> = ({ posts, categories, onNavigate }) 
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 space-y-6 animate-fade-in">
+      <SEOHead
+        title="SEO साइटमैप एवं Robots.txt | MP Exam Update"
+        description="MP Exam Update (mpexamupdates.in) का XML साइटमैप एवं Robots.txt विन्यास।"
+        canonicalUrl="https://mpexamupdates.in/sitemap"
+        noindex={true}
+        breadcrumbs={[{ label: 'होम', url: 'https://mpexamupdates.in/' }, { label: 'SEO साइटमैप एवं Robots.txt', url: 'https://mpexamupdates.in/sitemap' }]}
+      />
       <Breadcrumbs
         items={[{ label: 'SEO साइटमैप एवं Robots.txt' }]}
         onNavigate={onNavigate}

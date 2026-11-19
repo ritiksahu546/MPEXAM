@@ -1,6 +1,41 @@
 import { Post, Category } from '../types';
 
-export const DEFAULT_BASE_URL = 'https://www.mpexamupdates.in';
+export const DEFAULT_BASE_URL = 'https://mpexamupdates.in';
+
+/**
+ * Normalizes any URL or path to the strict non-www canonical production domain:
+ * https://mpexamupdates.in
+ */
+export function normalizeCanonicalUrl(rawUrl?: string | null, baseUrl: string = DEFAULT_BASE_URL): string {
+  const cleanBase = baseUrl.replace(/^https?:\/\/(www\.)?mpexamupdates\.in/i, 'https://mpexamupdates.in').replace(/\/+$/, '');
+  if (!rawUrl) return `${cleanBase}/`;
+
+  let cleaned = String(rawUrl).trim();
+  // Strip hash and query parameters
+  cleaned = cleaned.split('#')[0].split('?')[0].trim();
+
+  // Force https://mpexamupdates.in (non-www)
+  cleaned = cleaned.replace(/^https?:\/\/(www\.)?mpexamupdates\.in/i, 'https://mpexamupdates.in');
+
+  // If relative path, prepend cleanBase
+  if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+    const rel = cleaned.replace(/^\/+/, '');
+    cleaned = rel ? `${cleanBase}/${rel}` : `${cleanBase}/`;
+  }
+
+  // Normalize legacy category paths
+  cleaned = cleaned.replace(/\/category\/central-government-jobs(\/|$)/i, '/category/central-jobs');
+  cleaned = cleaned.replace(/\/category\/scheme(\/|$)/i, '/category/sarkari-yojana');
+  cleaned = cleaned.replace(/\/category\/govt-schemes(\/|$)/i, '/category/sarkari-yojana');
+  cleaned = cleaned.replace(/\/category\/mp-govt-jobs(\/|$)/i, '/category/sarkari-naukri');
+
+  // Keep trailing slash ONLY for root domain
+  if (/^https?:\/\/[^/]+\/?$/i.test(cleaned)) {
+    return `${cleaned.replace(/\/+$/, '')}/`;
+  }
+
+  return cleaned.replace(/\/+$/, '');
+}
 
 /**
  * Escapes XML special characters for safe inclusion in XML elements.
@@ -63,7 +98,8 @@ export function formatDateToYMD(dateInput?: string | null): string | undefined {
 
 /**
  * Normalizes a category slug to its canonical form.
- * Specifically maps legacy "central-government-jobs" to canonical "central-jobs".
+ * Maps legacy or internal IDs ("central-government-jobs", "scheme", "govt-schemes", "mp-govt-jobs")
+ * to their canonical public slugs.
  */
 export function normalizeCategorySlug(rawSlug?: string | null): string {
   if (!rawSlug) return '';
@@ -71,11 +107,12 @@ export function normalizeCategorySlug(rawSlug?: string | null): string {
     .trim()
     .toLowerCase()
     .replace(/^#\/?/, '')
+    .replace(/^category\//, '')
     .replace(/^\/+|\/+$/g, '');
 
-  if (trimmed === 'central-government-jobs') {
-    return 'central-jobs';
-  }
+  if (trimmed === 'central-government-jobs') return 'central-jobs';
+  if (trimmed === 'scheme' || trimmed === 'govt-schemes') return 'sarkari-yojana';
+  if (trimmed === 'mp-govt-jobs') return 'sarkari-naukri';
   return trimmed;
 }
 
@@ -87,8 +124,72 @@ export function normalizePostSlug(rawSlug?: string | null): string {
   return String(rawSlug)
     .trim()
     .replace(/^#\/?/, '')
-    .replace(/^job\//, '')
+    .replace(/^(job|post)\//, '')
     .replace(/^\/+|\/+$/g, '');
+}
+
+/**
+ * Determines whether a post belongs to a category by checking categoryId, slug, name,
+ * postType, and department keywords consistently across client UI, prerendering, and sitemap.
+ */
+export function doesPostMatchCategory(post: Post, cat?: Category | null, rawTargetSlug?: string): boolean {
+  const canonicalTarget = normalizeCategorySlug(rawTargetSlug || cat?.slug || cat?.id);
+  if (!canonicalTarget) return true;
+
+  const postCatSlug = normalizeCategorySlug(post.category || post.categoryId);
+  const postCatIdSlug = normalizeCategorySlug(post.categoryId);
+
+  if (postCatSlug === canonicalTarget || postCatIdSlug === canonicalTarget) {
+    return true;
+  }
+
+  if (cat) {
+    if (post.categoryId === cat.id || post.category === cat.id) return true;
+    if (cat.nameEnglish && (post.categoryName?.toLowerCase() === cat.nameEnglish.toLowerCase() || post.category?.toLowerCase() === cat.nameEnglish.toLowerCase())) {
+      return true;
+    }
+    if (cat.nameHindi && (post.categoryName === cat.nameHindi || post.category === cat.nameHindi)) {
+      return true;
+    }
+  }
+
+  // Match vertical category hubs with their corresponding postTypes and keywords
+  const combinedText = `${post.slug || ''} ${post.title || ''} ${post.titleHindi || ''} ${post.organization || ''} ${post.categoryName || ''} ${(post.tags || []).join(' ')}`.toLowerCase();
+
+  switch (canonicalTarget) {
+    case 'admit-card':
+      return post.postType === 'admit_card' || Boolean(post.admitCardLink) || combinedText.includes('admit card') || combinedText.includes('प्रवेश पत्र');
+    case 'results':
+      return post.postType === 'result' || Boolean(post.resultLink) || combinedText.includes('result') || combinedText.includes('परिणाम');
+    case 'answer-key':
+      return post.postType === 'answer_key' || Boolean(post.answerKeyLink) || combinedText.includes('answer key') || combinedText.includes('उत्तर कुंजी');
+    case 'syllabus':
+      return post.postType === 'syllabus' || Boolean(post.syllabus) || Boolean(post.examPattern);
+    case 'previous-papers':
+      return post.postType === 'previous_paper' || combinedText.includes('previous paper') || combinedText.includes('प्रश्न पत्र');
+    case 'sarkari-yojana':
+      return post.postType === 'scheme' || combinedText.includes('yojana') || combinedText.includes('योजना');
+    case 'sarkari-naukri':
+      return post.postType === 'job';
+    case 'exam-calendar':
+      return Boolean(post.examDate || post.applicationLastDate);
+    case 'mp-police':
+      return combinedText.includes('police') || combinedText.includes('पुलिस') || combinedText.includes('subedar') || combinedText.includes('constable');
+    case 'mppsc':
+      return combinedText.includes('mppsc') || combinedText.includes('लोक सेवा आयोग');
+    case 'mpesb':
+      return combinedText.includes('mpesb') || combinedText.includes('vyapam') || combinedText.includes('व्यापम') || combinedText.includes('कर्मचारी चयन मंडल');
+    case 'teacher-jobs':
+      return combinedText.includes('teacher') || combinedText.includes('शिक्षक') || combinedText.includes('tet') || combinedText.includes('वर्ग');
+    case 'patwari':
+      return combinedText.includes('patwari') || combinedText.includes('पटवारी') || combinedText.includes('राजस्व');
+    case 'panchayat':
+      return combinedText.includes('panchayat') || combinedText.includes('पंचायत') || combinedText.includes('ग्रामीण');
+    case 'central-jobs':
+      return combinedText.includes('ssc') || combinedText.includes('upsc') || combinedText.includes('railway') || combinedText.includes('central') || combinedText.includes('केंद्र');
+    default:
+      return false;
+  }
 }
 
 export interface SitemapUrlEntry {
@@ -103,7 +204,7 @@ export interface SitemapUrlEntry {
  * Strict rules:
  * 1. Clean path-based URLs only (NO hash '#' symbols)
  * 2. Only published posts (NO drafts/archived/deleted)
- * 3. Exact canonical domain: https://www.mpexamupdates.in/
+ * 3. Exact canonical non-www domain: https://mpexamupdates.in
  * 4. Real lastmod dates from posts/updates (omitted if unknown; NO fake today's date)
  * 5. Deduplicates categories by canonical slug and maps "central-government-jobs" -> "central-jobs"
  * 6. Guarantees no duplicate <loc> entries
@@ -114,7 +215,9 @@ export function generateSitemapXml(
   categories: Category[] = [],
   baseUrl: string = DEFAULT_BASE_URL
 ): string {
-  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+  const normalizedBaseUrl = baseUrl
+    .replace(/^https?:\/\/(www\.)?mpexamupdates\.in/i, 'https://mpexamupdates.in')
+    .replace(/\/+$/, '');
 
   // 1. Filter only published posts with a valid slug
   const publishedPosts = posts.filter(
@@ -139,14 +242,16 @@ export function generateSitemapXml(
 
   const addUrlEntry = (entry: SitemapUrlEntry) => {
     if (!entry.loc || typeof entry.loc !== 'string') return;
-    const cleanUrl = entry.loc.trim();
+    const cleanUrl = normalizeCanonicalUrl(entry.loc, normalizedBaseUrl);
 
     // Strict safety filters
     if (!cleanUrl.startsWith(normalizedBaseUrl)) return;
-    if (cleanUrl.includes('#')) return;
+    if (cleanUrl.includes('#') || cleanUrl.includes('?')) return;
     if (cleanUrl.includes('/admin')) return;
     if (cleanUrl.includes('/reset-password')) return;
     if (cleanUrl.includes('/search')) return;
+    if (cleanUrl.includes('/saved-jobs')) return;
+    if (cleanUrl.includes('/404')) return;
 
     if (seenUrls.has(cleanUrl)) return;
     seenUrls.add(cleanUrl);
@@ -160,7 +265,6 @@ export function generateSitemapXml(
   };
 
   // 2. Core Static & Hub Pages
-  // Real known lastmod dates only. When unknown, lastmod is omitted.
   const staticPages: SitemapUrlEntry[] = [
     { loc: `${normalizedBaseUrl}/`, lastmod: latestGlobalPostDate, changefreq: 'hourly', priority: '1.0' },
     { loc: `${normalizedBaseUrl}/jobs`, lastmod: latestGlobalPostDate, changefreq: 'daily', priority: '0.9' },
@@ -168,8 +272,8 @@ export function generateSitemapXml(
     { loc: `${normalizedBaseUrl}/results`, lastmod: latestGlobalPostDate, changefreq: 'daily', priority: '0.9' },
     { loc: `${normalizedBaseUrl}/answer-keys`, lastmod: latestGlobalPostDate, changefreq: 'daily', priority: '0.8' },
     { loc: `${normalizedBaseUrl}/categories`, lastmod: latestGlobalPostDate, changefreq: 'weekly', priority: '0.8' },
-    { loc: `${normalizedBaseUrl}/about`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.5' },
-    { loc: `${normalizedBaseUrl}/contact`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.5' },
+    { loc: `${normalizedBaseUrl}/about`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.6' },
+    { loc: `${normalizedBaseUrl}/contact`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.6' },
     { loc: `${normalizedBaseUrl}/privacy-policy`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.4' },
     { loc: `${normalizedBaseUrl}/terms-and-conditions`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.4' },
     { loc: `${normalizedBaseUrl}/disclaimer`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.4' },
@@ -181,24 +285,14 @@ export function generateSitemapXml(
   }
 
   // 3. Category Pages - Deduplicated by canonical slug
-  // Legacy "central-government-jobs" maps directly to canonical "central-jobs"
   const canonicalCategoriesMap = new Map<string, { category: Category; posts: Post[] }>();
 
   for (const cat of categories) {
-    if (!cat || !cat.slug) continue;
+    if (!cat || !cat.slug || (cat as Category & { active?: boolean }).active === false) continue;
     const canonicalSlug = normalizeCategorySlug(cat.slug);
     if (!canonicalSlug) continue;
 
-    // Filter posts that belong to this category (checking raw and canonical forms)
-    const catPosts = publishedPosts.filter(p => {
-      const pCatSlug = normalizeCategorySlug(p.category || p.categoryId);
-      return (
-        pCatSlug === canonicalSlug ||
-        p.categoryId === cat.id ||
-        (cat.nameEnglish && p.categoryName === cat.nameEnglish) ||
-        (cat.nameHindi && p.categoryName === cat.nameHindi)
-      );
-    });
+    const catPosts = publishedPosts.filter(p => doesPostMatchCategory(p, cat, canonicalSlug));
 
     if (!canonicalCategoriesMap.has(canonicalSlug)) {
       canonicalCategoriesMap.set(canonicalSlug, {
@@ -206,7 +300,6 @@ export function generateSitemapXml(
         posts: catPosts
       });
     } else {
-      // Merge posts into the existing canonical category
       const existing = canonicalCategoriesMap.get(canonicalSlug)!;
       for (const p of catPosts) {
         if (!existing.posts.some(ep => ep.id === p.id)) {
@@ -222,7 +315,6 @@ export function generateSitemapXml(
   );
 
   for (const [canonicalSlug, data] of sortedCanonicalEntries) {
-    // If category has published posts with valid dates, use latest real date; otherwise omit lastmod
     let catLastmod: string | undefined = undefined;
     if (data.posts.length > 0) {
       const catDates = data.posts
@@ -281,25 +373,26 @@ export function generateSitemapXml(
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Core Static Pages -->
 ${xmlUrls}
 </urlset>`.trim();
 }
 
 /**
- * Generates standard robots.txt referencing the production sitemap.xml.
+ * Generates standard robots.txt referencing the production non-www sitemap.xml.
  */
 export function generateRobotsTxt(baseUrl: string = DEFAULT_BASE_URL): string {
-  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
-  return `# robots.txt for MP Exam Update Portal
-User-agent: *
+  const normalizedBaseUrl = baseUrl
+    .replace(/^https?:\/\/(www\.)?mpexamupdates\.in/i, 'https://mpexamupdates.in')
+    .replace(/\/+$/, '');
+  return `User-agent: *
 Allow: /
 
-# Private admin & auth areas
+# Private admin, auth & user-specific routes
 Disallow: /admin
 Disallow: /reset-password
+Disallow: /search
+Disallow: /saved-jobs
 
-# Google & Bing Crawlers
 User-agent: Googlebot
 Allow: /
 

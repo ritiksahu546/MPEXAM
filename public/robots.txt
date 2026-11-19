@@ -1,8 +1,16 @@
 User-agent: *
 Allow: /
 
-# Private admin & auth areas
+# Private admin, auth & user-specific routes
 Disallow: /admin
 Disallow: /reset-password
+Disallow: /search
+Disallow: /saved-jobs
 
-Sitemap: https://www.mpexamupdates.in/sitemap.xml
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://mpexamupdates.in/sitemap.xml

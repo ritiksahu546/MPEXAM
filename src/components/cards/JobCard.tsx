@@ -358,14 +358,17 @@ export const JobCard: React.FC<Props> = ({ post, onSelect }) => {
         </div>
 
         {/* View Details Primary Action */}
-        <button
-          type="button"
-          onClick={() => onSelect(post.slug)}
+        <a
+          href={`/job/${post.slug}`}
+          onClick={(e) => {
+            e.preventDefault();
+            onSelect(post.slug);
+          }}
           className="w-full py-2 bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs group-hover:bg-blue-800 cursor-pointer"
         >
           <span>संपूर्ण विवरण देखें (View Details)</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </button>
+        </a>
       </div>
     </article>
   );

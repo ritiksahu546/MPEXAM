@@ -193,32 +193,32 @@ export const StaticPageView: React.FC<Props> = ({ pageType, settings, onNavigate
     about: {
       title: 'हमारे बारे में (About Us) - MP Exam Update',
       description: 'MP Exam Update (mpexamupdates.in) मध्य प्रदेश का समर्पित सरकारी नौकरी व परीक्षा पोर्टल है। हमारी टीम, उद्देश्य एवं प्रामाणिक सूचना मिशन की जानकारी।',
-      canonicalUrl: 'https://www.mpexamupdates.in/about'
+      canonicalUrl: 'https://mpexamupdates.in/about'
     },
     contact: {
       title: 'संपर्क करें (Contact Us) - MP Exam Update',
       description: 'MP Exam Update सहायता टीम से संपर्क करें। ई-मेल, टेलीग्राम, व्हाट्सएप एवं हेल्पलाइन द्वारा भर्ती संबंधी सहायता व सुझाव प्राप्त करें।',
-      canonicalUrl: 'https://www.mpexamupdates.in/contact'
+      canonicalUrl: 'https://mpexamupdates.in/contact'
     },
     'privacy-policy': {
       title: 'गोपनीयता नीति (Privacy Policy) - MP Exam Update',
       description: 'MP Exam Update पोर्टल की गोपनीयता नीति। जानें कि हम उपयोगकर्ता की निजता, कुकीज़ और डेटा सुरक्षा का किस प्रकार सम्मान व संरक्षण करते हैं।',
-      canonicalUrl: 'https://www.mpexamupdates.in/privacy-policy'
+      canonicalUrl: 'https://mpexamupdates.in/privacy-policy'
     },
     'terms-and-conditions': {
       title: 'नियम एवं शर्तें (Terms & Conditions) - MP Exam Update',
       description: 'MP Exam Update वेबसाइट के वैधानिक नियम, बौद्धिक संपदा अधिकार और सामग्री उपयोग की अनिवार्य शर्तें एवं नियम।',
-      canonicalUrl: 'https://www.mpexamupdates.in/terms-and-conditions'
+      canonicalUrl: 'https://mpexamupdates.in/terms-and-conditions'
     },
     disclaimer: {
       title: 'अस्वीकरण (Disclaimer) - MP Exam Update',
       description: 'MP Exam Update का आधिकारिक अस्वीकरण। हम एक स्वतंत्र सूचना मंच हैं। आवेदन करने से पूर्व आधिकारिक विज्ञप्ति से पुष्टि का वैधानिक स्पष्टीकरण।',
-      canonicalUrl: 'https://www.mpexamupdates.in/disclaimer'
+      canonicalUrl: 'https://mpexamupdates.in/disclaimer'
     },
     advertisement: {
       title: 'विज्ञापन नीति (Advertisement Policy) - MP Exam Update',
       description: 'MP Exam Update पर विज्ञापन, प्रायोजन एवं शैक्षणिक प्रचार की पारदर्शी विज्ञापन नीति, नियम और संपर्क प्रक्रिया।',
-      canonicalUrl: 'https://www.mpexamupdates.in/advertisement'
+      canonicalUrl: 'https://mpexamupdates.in/advertisement'
     }
   };
 
@@ -233,7 +233,7 @@ export const StaticPageView: React.FC<Props> = ({ pageType, settings, onNavigate
         canonicalUrl={currentSeo.canonicalUrl}
         ogType="website"
         breadcrumbs={[
-          { name: 'होम', item: 'https://www.mpexamupdates.in/' },
+          { name: 'होम', item: 'https://mpexamupdates.in/' },
           { name: current.title, item: currentSeo.canonicalUrl }
         ]}
       />

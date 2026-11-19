@@ -1,12 +1,13 @@
 import React from 'react';
 import { Post } from '../../types';
-import { ChevronRight, Sparkles, Building, Calendar, ArrowRight } from 'lucide-react';
+import { ChevronRight, Building, Calendar, ArrowRight } from 'lucide-react';
 
 interface Props {
   title: string;
   titleEn: string;
   posts: Post[];
   accentColor: 'blue' | 'amber' | 'emerald' | 'purple';
+  viewAllHref?: string;
   onSelectPost: (slug: string) => void;
   onViewAll: () => void;
 }
@@ -16,6 +17,7 @@ export const QuickTableCard: React.FC<Props> = ({
   titleEn,
   posts,
   accentColor,
+  viewAllHref,
   onSelectPost,
   onViewAll
 }) => {
@@ -24,29 +26,34 @@ export const QuickTableCard: React.FC<Props> = ({
       header: 'bg-gradient-to-r from-blue-800 to-blue-700 text-white',
       border: 'border-blue-200 hover:border-blue-400',
       badge: 'bg-blue-100 text-blue-800',
-      chevron: 'text-blue-600'
+      chevron: 'text-blue-600',
+      defaultHref: '/jobs'
     },
     amber: {
       header: 'bg-gradient-to-r from-amber-700 to-amber-600 text-white',
       border: 'border-amber-200 hover:border-amber-400',
       badge: 'bg-amber-100 text-amber-800',
-      chevron: 'text-amber-600'
+      chevron: 'text-amber-600',
+      defaultHref: '/admit-cards'
     },
     emerald: {
       header: 'bg-gradient-to-r from-emerald-800 to-emerald-700 text-white',
       border: 'border-emerald-200 hover:border-emerald-400',
       badge: 'bg-emerald-100 text-emerald-800',
-      chevron: 'text-emerald-600'
+      chevron: 'text-emerald-600',
+      defaultHref: '/results'
     },
     purple: {
       header: 'bg-gradient-to-r from-purple-800 to-purple-700 text-white',
       border: 'border-purple-200 hover:border-purple-400',
       badge: 'bg-purple-100 text-purple-800',
-      chevron: 'text-purple-600'
+      chevron: 'text-purple-600',
+      defaultHref: '/answer-keys'
     }
   };
 
   const theme = colorMap[accentColor];
+  const targetHref = viewAllHref || theme.defaultHref;
 
   return (
     <div className={`bg-white rounded-2xl border ${theme.border} shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col h-full`}>
@@ -60,13 +67,17 @@ export const QuickTableCard: React.FC<Props> = ({
             {titleEn}
           </span>
         </div>
-        <button
-          onClick={onViewAll}
+        <a
+          href={targetHref}
+          onClick={(e) => {
+            e.preventDefault();
+            onViewAll();
+          }}
           className="text-xs font-bold bg-white/20 hover:bg-white/30 active:bg-white/40 text-white px-3 py-1.5 rounded-lg transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
         >
           <span>सभी</span>
           <ChevronRight className="w-3.5 h-3.5" />
-        </button>
+        </a>
       </div>
 
       {/* List Items */}
@@ -124,13 +135,17 @@ export const QuickTableCard: React.FC<Props> = ({
 
       {/* Footer View All Link */}
       <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
-        <button
-          onClick={onViewAll}
+        <a
+          href={targetHref}
+          onClick={(e) => {
+            e.preventDefault();
+            onViewAll();
+          }}
           className="text-xs font-bold text-blue-700 hover:text-blue-900 inline-flex items-center gap-1 group cursor-pointer"
         >
-          <span>इस श्रेणी के सभी {posts.length} पोस्ट देखें</span>
+          <span>{title} के सभी {posts.length} अपडेट्स देखें</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </button>
+        </a>
       </div>
     </div>
   );

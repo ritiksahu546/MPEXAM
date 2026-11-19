@@ -36,7 +36,7 @@ export const NotFoundView: React.FC<Props> = ({
       <SEOHead
         title="404 - पृष्ठ नहीं मिला (Page Not Found) | MP Exam Update"
         description="क्षमा करें, आपके द्वारा खोजा गया पृष्ठ उपलब्ध नहीं है या हटा दिया गया है। नवीनतम एमपी सरकारी नौकरी एवं परीक्षा अपडेट देखें।"
-        canonicalUrl="https://www.mpexamupdates.in/404"
+        canonicalUrl="https://mpexamupdates.in/404"
         noindex={true}
       />
 

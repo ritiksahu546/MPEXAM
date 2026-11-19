@@ -56,7 +56,8 @@ export const SavedJobsView: React.FC<Props> = ({
       <SEOHead
         title="मेरी सुरक्षित नौकरियां एवं परीक्षा अपडेट (Saved Jobs)"
         description="आपके द्वारा बुकमार्क की गई सभी मध्य प्रदेश सरकारी भर्तियां, एडमिट कार्ड एवं परीक्षा अपडेट।"
-        canonicalUrl="https://www.mpexamupdates.in/saved-jobs"
+        canonicalUrl="https://mpexamupdates.in/saved-jobs"
+        noindex={true}
       />
 
       {/* Top Breadcrumb */}

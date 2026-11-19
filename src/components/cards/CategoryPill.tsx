@@ -1,5 +1,6 @@
 import React from 'react';
 import { Category } from '../../types';
+import { normalizeCategorySlug } from '../../utils/sitemapGenerator';
 import { 
   Award, 
   FileText, 
@@ -25,6 +26,8 @@ interface Props {
 }
 
 export const CategoryPill: React.FC<Props> = ({ category, isSelected = false, onClick }) => {
+  const canonicalSlug = normalizeCategorySlug(category.slug);
+
   const getIcon = (iconName: string) => {
     switch (iconName) {
       case 'Award': return <Award className="w-3.5 h-3.5" />;
@@ -47,8 +50,12 @@ export const CategoryPill: React.FC<Props> = ({ category, isSelected = false, on
   };
 
   return (
-    <button
-      onClick={() => onClick(category.slug)}
+    <a
+      href={`/category/${canonicalSlug}`}
+      onClick={(e) => {
+        e.preventDefault();
+        onClick(canonicalSlug);
+      }}
       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 border ${
         isSelected
           ? 'bg-blue-700 text-white border-blue-700 shadow-xs'
@@ -59,6 +66,6 @@ export const CategoryPill: React.FC<Props> = ({ category, isSelected = false, on
         {getIcon(category.icon)}
       </span>
       <span>{category.nameHindi}</span>
-    </button>
+    </a>
   );
 };

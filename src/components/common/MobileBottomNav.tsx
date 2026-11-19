@@ -33,38 +33,35 @@ export const MobileBottomNav: React.FC<Props> = ({
     {
       id: 'home',
       label: 'होम',
+      href: '/',
+      route: 'home',
       icon: Home,
-      isActive: isHome,
-      onClick: () => onNavigate('home')
+      isActive: isHome
     },
     {
       id: 'jobs',
       label: 'नौकरी',
+      href: '/jobs',
+      route: 'jobs',
       icon: Briefcase,
-      isActive: isJobs,
-      onClick: () => onNavigate('jobs')
+      isActive: isJobs
     },
     {
       id: 'admit-cards',
       label: 'एडमिट कार्ड',
+      href: '/admit-cards',
+      route: 'admit-cards',
       icon: FileText,
-      isActive: isAdmitCards,
-      onClick: () => onNavigate('admit-cards')
+      isActive: isAdmitCards
     },
     {
       id: 'saved-jobs',
       label: 'सुरक्षित',
+      href: '/saved-jobs',
+      route: 'saved-jobs',
       icon: Bookmark,
       badgeCount: savedCount,
-      isActive: isSavedJobs,
-      onClick: () => onNavigate('saved-jobs')
-    },
-    {
-      id: 'search',
-      label: 'खोजें',
-      icon: Search,
-      isActive: false,
-      onClick: onOpenSearch
+      isActive: isSavedJobs
     }
   ];
 
@@ -76,10 +73,13 @@ export const MobileBottomNav: React.FC<Props> = ({
       {navItems.map((item) => {
         const Icon = item.icon;
         return (
-          <button
+          <a
             key={item.id}
-            onClick={item.onClick}
-            type="button"
+            href={item.href}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate(item.route);
+            }}
             className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 min-h-[48px] rounded-lg transition-colors cursor-pointer select-none relative ${
               item.isActive
                 ? 'text-blue-700 font-bold'
@@ -100,10 +100,21 @@ export const MobileBottomNav: React.FC<Props> = ({
             <span className="text-[11px] leading-tight mt-1 truncate max-w-[64px]">
               {item.label}
             </span>
-          </button>
+          </a>
         );
       })}
+      <button
+        onClick={onOpenSearch}
+        type="button"
+        className="flex-1 flex flex-col items-center justify-center py-1.5 px-1 min-h-[48px] rounded-lg transition-colors cursor-pointer select-none relative text-slate-600 hover:text-slate-900 font-medium"
+      >
+        <div className="relative">
+          <Search className="w-5 h-5 text-slate-600" />
+        </div>
+        <span className="text-[11px] leading-tight mt-1 truncate max-w-[64px]">
+          खोजें
+        </span>
+      </button>
     </nav>
   );
 };
-

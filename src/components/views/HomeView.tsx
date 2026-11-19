@@ -98,7 +98,7 @@ export const HomeView: React.FC<Props> = ({
       subtitle: 'महिला एवं बाल विकास विभाग मध्य प्रदेश',
       benefit: '₹1250 प्रतिमाह सीधे बैंक खाते में (डीबीटी)',
       eligibility: '21 से 60 वर्ष की विवाहित/कल्याणी/परित्यक्ता बहनें',
-      slug: 'mukhyamantri-ladli-behna-yojana',
+      categoryRoute: 'category/sarkari-yojana',
       link: 'https://cmladlibahna.mp.gov.in/'
     },
     {
@@ -107,7 +107,7 @@ export const HomeView: React.FC<Props> = ({
       subtitle: 'श्रम विभाग मध्य प्रदेश शासन',
       benefit: 'शिक्षा सहायता, प्रसूति सहायता व अनुग्रह राशि',
       eligibility: 'असंगठित क्षेत्र के श्रमिक (संबल कार्ड धारक)',
-      slug: 'sambal-yojana-mp',
+      categoryRoute: 'category/sarkari-yojana',
       link: 'https://sambal.mp.gov.in/'
     },
     {
@@ -116,7 +116,7 @@ export const HomeView: React.FC<Props> = ({
       subtitle: 'तकनीकी शिक्षा, कौशल विकास एवं रोजगार विभाग',
       benefit: '₹8,000 से ₹10,000 मासिक स्टाइपेंड व ऑन-जॉब ट्रेनिंग',
       eligibility: '18 से 29 वर्ष के 12वीं/आईटीआई/डिप्लोमा/ग्रेजुएट युवा',
-      slug: 'seekho-kamao-yojana-mp',
+      categoryRoute: 'category/sarkari-yojana',
       link: 'https://mmsky.mp.gov.in/'
     },
     {
@@ -125,7 +125,7 @@ export const HomeView: React.FC<Props> = ({
       subtitle: 'सूक्ष्म, लघु एवं मध्यम उद्यम विभाग',
       benefit: '₹1 लाख से ₹50 लाख तक बैंक ऋण + 3% ब्याज अनुदान',
       eligibility: '18 से 40 वर्ष के 8वीं/10वीं उत्तीर्ण युवा उद्यमी',
-      slug: 'udyam-kranti-yojana-mp',
+      categoryRoute: 'category/sarkari-yojana',
       link: 'https://samast.mponline.gov.in/'
     }
   ];
@@ -137,28 +137,28 @@ export const HomeView: React.FC<Props> = ({
       title: 'MPPSC राज्य सेवा प्रारंभिक परीक्षा (GS Paper 1 & 2)',
       years: '2020 - 2024 (हल सहित)',
       dept: 'मध्य प्रदेश लोक सेवा आयोग इंदौर',
-      slug: 'mppsc-pre-previous-papers'
+      categoryRoute: 'category/previous-papers'
     },
     {
       id: 'paper-mp-police',
       title: 'एमपी पुलिस कांस्टेबल भर्ती परीक्षा प्रश्न पत्र',
       years: '2022 - 2023 All Shifts',
       dept: 'MPESB (व्यापम) भोपाल',
-      slug: 'mp-police-constable-previous-papers'
+      categoryRoute: 'category/previous-papers'
     },
     {
       id: 'paper-patwari',
       title: 'मध्य प्रदेश पटवारी संयुक्त भर्ती परीक्षा साल्व्ड पेपर',
       years: '2017 & 2023 Solutions',
       dept: 'राजस्व विभाग म.प्र.',
-      slug: 'mp-patwari-previous-papers'
+      categoryRoute: 'category/previous-papers'
     },
     {
       id: 'paper-vanrakshak',
       title: 'वनरक्षक एवं जेल प्रहरी भर्ती परीक्षा प्रश्न पत्र',
       years: '2023 संयुक्त परीक्षा',
       dept: 'वन एवं जेल विभाग म.प्र.',
-      slug: 'mp-vanrakshak-previous-papers'
+      categoryRoute: 'category/previous-papers'
     }
   ];
 
@@ -168,25 +168,40 @@ export const HomeView: React.FC<Props> = ({
       id: 'syl-mppsc',
       title: 'MPPSC राज्य सेवा परीक्षा नया पाठ्यक्रम 2026',
       details: 'प्रारंभिक (200 अंक) + मुख्य परीक्षा (1500 अंक) + साक्षात्कार (185 अंक)',
-      slug: 'mppsc-state-service-new-syllabus'
+      categoryRoute: 'category/syllabus'
     },
     {
       id: 'syl-esb-group4',
       title: 'MPESB ग्रुप-4 सहायक ग्रेड 3 व स्टेनो पाठ्यक्रम',
       details: 'सामान्य ज्ञान, हिंदी, अंग्रेजी, गणित, कंप्यूटर व रीजनिंग (100 अंक)',
-      slug: 'mpesb-group-4-syllabus'
+      categoryRoute: 'category/syllabus'
     },
     {
       id: 'syl-mp-police',
       title: 'एमपी पुलिस आरक्षक (जीडी व रेडियो) परीक्षा पैटर्न',
       details: 'लिखित परीक्षा (100 अंक) + शारीरिक दक्षता परीक्षा (100 अंक)',
-      slug: 'mp-police-constable-syllabus'
+      categoryRoute: 'category/syllabus'
     },
     {
       id: 'syl-shikshak-varg3',
       title: 'एमपी प्राथमिक शिक्षक पात्रता परीक्षा (वर्ग 3) सिलेबस',
       details: 'बाल विकास, भाषा 1 & 2, गणित व पर्यावरण अध्ययन (150 अंक)',
-      slug: 'mp-tet-varg-3-syllabus'
+      categoryRoute: 'category/syllabus'
+    }
+  ];
+
+  const homepageFaqs = [
+    {
+      question: 'मध्य प्रदेश सरकारी नौकरी में आवेदन हेतु रोजगार पंजीयन अनिवार्य है क्या?',
+      answer: 'हाँ, मध्य प्रदेश की अधिकांश भर्ती परीक्षाओं (विशेषकर MPESB एवं पुलिस भर्ती) में आवेदन करते समय अभ्यर्थी का मध्य प्रदेश रोजगार पोर्टल (mprojgar.gov.in) पर जीवित पंजीयन होना अनिवार्य होता है।'
+    },
+    {
+      question: 'क्या अन्य राज्यों के उम्मीदवार भी MP की सरकारी नौकरियों में आवेदन कर सकते हैं?',
+      answer: 'हाँ, अन्य राज्यों के अभ्यर्थी भी सामान्य (अनारक्षित) श्रेणी के अंतर्गत आवेदन कर सकते हैं। आरक्षित श्रेणियों (SC/ST/OBC/EWS) के आरक्षण एवं आयु छूट का लाभ केवल मध्य प्रदेश के मूल निवासियों को देय होता है।'
+    },
+    {
+      question: 'MPESB (व्यापम) प्रोफाइल रजिस्ट्रेशन और ई-केवाईसी कैसे करें?',
+      answer: 'MP Online कियोस्क अथवा ESB की आधिकारिक वेबसाइट पर आधार नंबर, फोटो, हस्ताक्षर एवं हस्तलिखित घोषणापत्र अपलोड कर प्रोफाइल पंजीयन किया जाता है। एक बार बनी प्रोफाइल आईडी से आगामी सभी परीक्षाओं में सरलता से आवेदन किया जा सकता है।'
     }
   ];
 
@@ -197,8 +212,9 @@ export const HomeView: React.FC<Props> = ({
       <SEOHead
         title={`${settings.siteName || 'MP Exam Update'} - मध्य प्रदेश सरकारी नौकरी, व्यापम, MPPSC, रिजल्ट 2026`}
         description={settings.siteDescription || 'मध्य प्रदेश की समस्त सरकारी भर्तियां (MP Govt Jobs 2026), MPPSC, MPESB (व्यापम), एमपी पुलिस, पटवारी, शिक्षक भर्ती, एडमिट कार्ड, रिजल्ट एवं उत्तर कुंजी सबसे पहले।'}
-        canonicalUrl="https://www.mpexamupdates.in/"
+        canonicalUrl="https://mpexamupdates.in/"
         ogType="website"
+        faqs={homepageFaqs}
       />
 
       {/* =========================================================================
@@ -306,13 +322,17 @@ export const HomeView: React.FC<Props> = ({
                   सीधा प्रवेश श्रेणियां (Quick Categories)
                 </h2>
               </div>
-              <button
-                onClick={() => onNavigate('categories')}
+              <a
+                href="/categories"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate('categories');
+                }}
                 className="text-xs font-bold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-0.5 cursor-pointer"
               >
                 <span>सभी श्रेणियां</span>
                 <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              </a>
             </div>
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {categories.filter(c => c.active !== false).slice(0, 12).map((cat) => (
@@ -351,13 +371,17 @@ export const HomeView: React.FC<Props> = ({
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => onNavigate('jobs')}
+            <a
+              href="/jobs"
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate('jobs');
+              }}
               className="text-xs sm:text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <span>सभी भर्तियां ({latestJobs.length})</span>
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </a>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
@@ -451,13 +475,17 @@ export const HomeView: React.FC<Props> = ({
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => onNavigate('jobs')}
+              <a
+                href="/jobs"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate('jobs');
+                }}
                 className="text-xs font-bold text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>सभी समय-सारिणी</span>
                 <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              </a>
             </div>
 
             <div className="rounded-xl border border-slate-200 overflow-x-auto">
@@ -499,13 +527,16 @@ export const HomeView: React.FC<Props> = ({
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => onSelectPost(post.slug)}
-                          className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                        <a
+                          href={`/job/${post.slug}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            onSelectPost(post.slug);
+                          }}
+                          className="inline-block px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                         >
                           देखें →
-                        </button>
+                        </a>
                       </td>
                     </tr>
                   ))}
@@ -535,13 +566,17 @@ export const HomeView: React.FC<Props> = ({
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => onNavigate('category/scheme')}
+            <a
+              href="/category/sarkari-yojana"
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate('category/sarkari-yojana');
+              }}
               className="text-xs font-bold text-rose-700 hover:text-rose-900 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <span>सभी योजनाएं</span>
               <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            </a>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -573,14 +608,17 @@ export const HomeView: React.FC<Props> = ({
                 </div>
 
                 {item.slug ? (
-                  <button
-                    type="button"
-                    onClick={() => onSelectPost(item.slug)}
+                  <a
+                    href={`/job/${item.slug}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onSelectPost(item.slug);
+                    }}
                     className="w-full py-1.5 text-center text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
                   >
                     <span>योजना विवरण व आवेदन</span>
                     <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                  </a>
                 ) : (
                   <a
                     href={item.link}
@@ -625,10 +663,18 @@ export const HomeView: React.FC<Props> = ({
 
               <div className="space-y-3">
                 {(previousPaperPosts.length > 0 ? previousPaperPosts.slice(0, 4) : defaultPapers).map((paper: any) => (
-                  <div
+                  <a
                     key={paper.id}
-                    onClick={() => paper.slug && onSelectPost(paper.slug)}
-                    className="p-3 bg-slate-50/70 hover:bg-indigo-50/40 border border-slate-200 hover:border-indigo-300 rounded-xl transition-all cursor-pointer group flex items-start justify-between gap-3"
+                    href={paper.slug ? `/job/${paper.slug}` : `/${paper.categoryRoute || 'category/previous-papers'}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (paper.slug) {
+                        onSelectPost(paper.slug);
+                      } else {
+                        onNavigate(paper.categoryRoute || 'category/previous-papers');
+                      }
+                    }}
+                    className="p-3 bg-slate-50/70 hover:bg-indigo-50/40 border border-slate-200 hover:border-indigo-300 rounded-xl transition-all cursor-pointer group flex items-start justify-between gap-3 block"
                   >
                     <div className="min-w-0">
                       <h4 className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-indigo-700 leading-snug line-clamp-1">
@@ -643,20 +689,23 @@ export const HomeView: React.FC<Props> = ({
                     <span className="p-1.5 rounded-lg bg-white border border-slate-200 group-hover:border-indigo-400 text-indigo-600 shrink-0 shadow-2xs">
                       <Download className="w-4 h-4" />
                     </span>
-                  </div>
+                  </a>
                 ))}
               </div>
             </div>
 
             <div className="mt-4 pt-3 border-t border-slate-100 text-center">
-              <button
-                type="button"
-                onClick={() => onNavigate('jobs')}
+              <a
+                href="/category/previous-papers"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate('category/previous-papers');
+                }}
                 className="text-xs font-bold text-indigo-700 hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
                 <span>सभी प्रश्न पत्र संग्रह देखें</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </a>
             </div>
           </div>
 
@@ -681,10 +730,18 @@ export const HomeView: React.FC<Props> = ({
 
               <div className="space-y-3">
                 {(syllabusPosts.length > 0 ? syllabusPosts.slice(0, 4) : defaultSyllabus).map((syl: any) => (
-                  <div
+                  <a
                     key={syl.id}
-                    onClick={() => syl.slug && onSelectPost(syl.slug)}
-                    className="p-3 bg-slate-50/70 hover:bg-teal-50/40 border border-slate-200 hover:border-teal-300 rounded-xl transition-all cursor-pointer group flex items-start justify-between gap-3"
+                    href={syl.slug ? `/job/${syl.slug}` : `/${syl.categoryRoute || 'category/syllabus'}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (syl.slug) {
+                        onSelectPost(syl.slug);
+                      } else {
+                        onNavigate(syl.categoryRoute || 'category/syllabus');
+                      }
+                    }}
+                    className="p-3 bg-slate-50/70 hover:bg-teal-50/40 border border-slate-200 hover:border-teal-300 rounded-xl transition-all cursor-pointer group flex items-start justify-between gap-3 block"
                   >
                     <div className="min-w-0">
                       <h4 className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-teal-800 leading-snug line-clamp-1">
@@ -695,20 +752,23 @@ export const HomeView: React.FC<Props> = ({
                       </p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-700 shrink-0 mt-1" />
-                  </div>
+                  </a>
                 ))}
               </div>
             </div>
 
             <div className="mt-4 pt-3 border-t border-slate-100 text-center">
-              <button
-                type="button"
-                onClick={() => onNavigate('jobs')}
+              <a
+                href="/category/syllabus"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate('category/syllabus');
+                }}
                 className="text-xs font-bold text-teal-700 hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
                 <span>सभी परीक्षाओं का सिलेबस देखें</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </a>
             </div>
           </div>
 
@@ -730,7 +790,7 @@ export const HomeView: React.FC<Props> = ({
               मध्य प्रदेश सरकारी नौकरी एवं भर्ती परीक्षाएं 2026: एक संपूर्ण परिचय
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              मध्य प्रदेश में शासकीय सेवा में चयन हेतु राज्य सरकार द्वारा विभिन्न आयोगों और भर्ती मंडलों के माध्यम से वर्ष भर पारदर्शी परीक्षाएं आयोजित की जाती हैं। <strong>MP Exam Update (www.mpexamupdates.in)</strong> पोर्टल का उद्देश्य प्रदेश के लाखों अभ्यर्थियों तक नवीनतम विज्ञप्तियों, आवेदन प्रक्रियाओं, प्रवेश पत्रों और परीक्षा परिणामों की आधिकारिक व सटीक जानकारी बिना किसी भ्रामक विज्ञापन के समय पर पहुंचाना है।
+              मध्य प्रदेश में शासकीय सेवा में चयन हेतु राज्य सरकार द्वारा विभिन्न आयोगों और भर्ती मंडलों के माध्यम से वर्ष भर पारदर्शी परीक्षाएं आयोजित की जाती हैं। <strong>MP Exam Update (mpexamupdates.in)</strong> पोर्टल का उद्देश्य प्रदेश के लाखों अभ्यर्थियों तक नवीनतम विज्ञप्तियों, आवेदन प्रक्रियाओं, प्रवेश पत्रों और परीक्षा परिणामों की आधिकारिक व सटीक जानकारी बिना किसी भ्रामक विज्ञापन के समय पर पहुंचाना है।
             </p>
           </div>
 
@@ -738,7 +798,13 @@ export const HomeView: React.FC<Props> = ({
             <div className="p-4 rounded-xl border border-slate-150 bg-slate-50/60">
               <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2 mb-2">
                 <Award className="w-4 h-4 text-blue-700 shrink-0" />
-                <span>1. मध्य प्रदेश लोक सेवा आयोग (MPPSC इंदौर)</span>
+                <a
+                  href="/category/mppsc"
+                  onClick={(e) => { e.preventDefault(); onNavigate('category/mppsc'); }}
+                  className="hover:text-blue-700 hover:underline"
+                >
+                  1. मध्य प्रदेश लोक सेवा आयोग (MPPSC इंदौर)
+                </a>
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 MPPSC द्वारा राज्य प्रशासनिक सेवा (डिप्टी कलेक्टर), राज्य पुलिस सेवा (डीएसपी), वाणिज्यिक कर अधिकारी, वन सेवा एवं सहायक प्राध्यापक पदों हेतु राज्य सेवा परीक्षा आयोजित की जाती है। परीक्षा तीन चरणों — प्रारंभिक, मुख्य एवं साक्षात्कार में संपन्न होती है।
@@ -748,7 +814,13 @@ export const HomeView: React.FC<Props> = ({
             <div className="p-4 rounded-xl border border-slate-150 bg-slate-50/60">
               <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2 mb-2">
                 <FileText className="w-4 h-4 text-amber-700 shrink-0" />
-                <span>2. म.प्र. कर्मचारी चयन मंडल (MPESB / व्यापम भोपाल)</span>
+                <a
+                  href="/category/mpesb"
+                  onClick={(e) => { e.preventDefault(); onNavigate('category/mpesb'); }}
+                  className="hover:text-blue-700 hover:underline"
+                >
+                  2. म.प्र. कर्मचारी चयन मंडल (MPESB / व्यापम भोपाल)
+                </a>
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 MPESB तृतीय एवं चतुर्थ श्रेणी के गैर-राजपत्रित पदों जैसे पुलिस आरक्षक, पटवारी, सब-इंजीनियर, ग्रुप-2, ग्रुप-3, ग्रुप-4, जेल प्रहरी एवं प्राथमिक/माध्यमिक शिक्षक पात्रता परीक्षा (MP TET) का आयोजन करता है।

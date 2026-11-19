@@ -5,8 +5,9 @@ import { Breadcrumbs } from '../common/Breadcrumbs';
 import { Disclaimer } from '../common/Disclaimer';
 import { ShareButtons } from '../common/ShareButtons';
 import { AdSlot } from '../common/AdSlot';
-import { SEOHead } from '../common/SEOHead';
+import { SEOHead, isJobDateExpired } from '../common/SEOHead';
 import { findAdSlot } from '../../utils/adSlots';
+import { DEFAULT_BASE_URL, normalizeCanonicalUrl, normalizeCategorySlug, doesPostMatchCategory } from '../../utils/sitemapGenerator';
 import { 
   Calendar, 
   Building, 
@@ -37,6 +38,7 @@ import { isJobSaved, toggleJobSaved, BOOKMARKS_EVENT } from '../../utils/bookmar
 interface Props {
   post: Post;
   relatedPosts: Post[];
+  allPosts?: Post[];
   categories: Category[];
   adSlots: AdSlotConfig[];
   onNavigate: (route: string) => void;
@@ -46,6 +48,7 @@ interface Props {
 export const JobDetailView: React.FC<Props> = ({
   post,
   relatedPosts,
+  allPosts = [],
   categories,
   adSlots,
   onNavigate,
@@ -77,10 +80,24 @@ export const JobDetailView: React.FC<Props> = ({
 
   const getAd = (key: string) => findAdSlot(adSlots, key);
 
-  const categorySlug = categories.find(c => c.id === post.categoryId)?.slug || post.categoryId;
-  const canonicalPathUrl = (post.canonicalUrl && !post.canonicalUrl.includes('#')) 
-    ? post.canonicalUrl 
-    : `https://www.mpexamupdates.in/job/${post.slug}`;
+  const matchedCategory = categories.find(
+    c => c.id === post.categoryId || normalizeCategorySlug(c.slug) === normalizeCategorySlug(post.category || post.categoryId)
+  ) || categories.find(c => doesPostMatchCategory(post, c, c.slug));
+
+  const categorySlug = normalizeCategorySlug(matchedCategory?.slug || post.category || post.categoryId) || 'sarkari-naukri';
+  const categoryDisplayName = matchedCategory?.nameHindi || post.categoryName || 'मध्य प्रदेश भर्ती';
+  const isExpired = isJobDateExpired(post.applicationLastDate);
+
+  const canonicalPathUrl = normalizeCanonicalUrl(
+    (post.canonicalUrl && !post.canonicalUrl.includes('#'))
+      ? post.canonicalUrl
+      : `${DEFAULT_BASE_URL}/job/${post.slug}`
+  );
+
+  // Determine previous and next recruitment updates for internal linking
+  const currentPostIndex = allPosts.findIndex(p => p.id === post.id || p.slug === post.slug);
+  const prevPost = currentPostIndex > 0 ? allPosts[currentPostIndex - 1] : null;
+  const nextPost = currentPostIndex >= 0 && currentPostIndex < allPosts.length - 1 ? allPosts[currentPostIndex + 1] : null;
 
   const toggleFaq = (index: number) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
@@ -92,7 +109,7 @@ export const JobDetailView: React.FC<Props> = ({
       {/* Dynamic SEO Head & Structured Data */}
       <SEOHead
         title={post.seoTitle || post.titleHindi || post.title}
-        description={post.seoDescription || post.excerpt || `${post.title} - पात्रता, आयु सीमा, चयन प्रक्रिया, महत्वपूर्ण तिथियां, आवेदन शुल्क एवं आधिकारिक अधिसूचना।`}
+        description={post.seoDescription || post.excerpt || `${post.titleHindi || post.title} - पात्रता, आयु सीमा, चयन प्रक्रिया, महत्वपूर्ण तिथियां, आवेदन शुल्क एवं आधिकारिक अधिसूचना।`}
         keywords={post.focusKeyword ? `${post.focusKeyword}, ${post.secondaryKeywords || ''}, MP Jobs 2026, ${post.organization}` : (post.tags || []).join(', ')}
         canonicalUrl={canonicalPathUrl}
         ogType="article"
@@ -100,12 +117,12 @@ export const JobDetailView: React.FC<Props> = ({
         publishedTime={post.publishedAt || post.createdAt}
         modifiedTime={post.updatedAt || post.publishedAt || post.createdAt}
         breadcrumbs={[
-          { name: 'होम', item: 'https://www.mpexamupdates.in/' },
-          { name: post.categoryName || 'श्रेणी', item: `https://www.mpexamupdates.in/category/${categorySlug}` },
+          { name: 'होम', item: `${DEFAULT_BASE_URL}/` },
+          { name: categoryDisplayName, item: `${DEFAULT_BASE_URL}/category/${categorySlug}` },
           { name: post.titleHindi || post.title, item: canonicalPathUrl }
         ]}
         faqs={post.faqs}
-        jobPosting={post.postType === 'job' ? {
+        jobPosting={(post.postType === 'job' && !isExpired) ? {
           title: post.title,
           description: post.excerpt || post.title,
           datePosted: post.publishedAt || post.createdAt,
@@ -121,7 +138,7 @@ export const JobDetailView: React.FC<Props> = ({
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
-          { label: post.categoryName || 'श्रेणी', href: `category/${categorySlug}` },
+          { label: categoryDisplayName, href: `category/${categorySlug}` },
           { label: post.titleHindi || post.title }
         ]}
         onNavigate={onNavigate}
@@ -136,9 +153,16 @@ export const JobDetailView: React.FC<Props> = ({
         {/* Header Title Section */}
         <div className="border-b border-slate-200 pb-5">
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-md border border-blue-200">
-              {post.categoryName || 'मध्य प्रदेश भर्ती'}
-            </span>
+            <a
+              href={`/category/${categorySlug}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate(`category/${categorySlug}`);
+              }}
+              className="bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-md border border-blue-200 transition-colors"
+            >
+              {categoryDisplayName}
+            </a>
             <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-2.5 py-0.5 rounded-md flex items-center gap-1">
               <Building className="w-3.5 h-3.5 text-slate-500" />
               <span>{post.organization}</span>
@@ -148,6 +172,13 @@ export const JobDetailView: React.FC<Props> = ({
                 कुल पद: {post.vacancy}
               </span>
             )}
+            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md border ${
+              isExpired
+                ? 'bg-slate-100 text-slate-600 border-slate-300'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            }`}>
+              {isExpired ? 'आवेदन बंद (Application Closed)' : 'सक्रिय (Active)'}
+            </span>
           </div>
 
           <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 leading-snug">
@@ -663,14 +694,17 @@ export const JobDetailView: React.FC<Props> = ({
             </span>
             <div className="flex flex-wrap gap-1.5">
               {post.tags.map((t) => (
-                <button
+                <a
                   key={t}
-                  type="button"
-                  onClick={() => onNavigate(`tag/${encodeURIComponent(t)}`)}
+                  href={`/tag/${encodeURIComponent(t)}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onNavigate(`tag/${encodeURIComponent(t)}`);
+                  }}
                   className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 rounded-lg text-xs font-semibold border border-blue-200 transition-colors cursor-pointer flex items-center gap-1"
                 >
                   <span>#{t}</span>
-                </button>
+                </a>
               ))}
             </div>
           </div>
@@ -684,13 +718,66 @@ export const JobDetailView: React.FC<Props> = ({
 
       </article>
 
+      {/* Previous & Upcoming Recruitment Updates Navigation */}
+      {(prevPost || nextPost) && (
+        <nav aria-label="Previous and Upcoming Recruitment Updates" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {prevPost ? (
+            <a
+              href={`/job/${prevPost.slug}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onSelectPost(prevPost.slug);
+              }}
+              className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/30 transition-all shadow-2xs block group"
+            >
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                ← पिछली भर्ती अपडेट (Previous Recruitment Update)
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-blue-700 line-clamp-2 block">
+                {prevPost.titleHindi || prevPost.title}
+              </span>
+            </a>
+          ) : <div className="hidden sm:block" />}
+
+          {nextPost ? (
+            <a
+              href={`/job/${nextPost.slug}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onSelectPost(nextPost.slug);
+              }}
+              className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/30 transition-all shadow-2xs block sm:text-right group"
+            >
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                आगामी भर्ती अपडेट (Next Recruitment Update) →
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-blue-700 line-clamp-2 block">
+                {nextPost.titleHindi || nextPost.title}
+              </span>
+            </a>
+          ) : <div className="hidden sm:block" />}
+        </nav>
+      )}
+
       {/* Related Posts Section */}
       {relatedPosts.length > 0 && (
-        <section aria-labelledby="related-heading" className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
-          <h2 id="related-heading" className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-700" />
-            <span>संबंधित अन्य महत्वपूर्ण भर्तियां (Related Jobs & Exams)</span>
-          </h2>
+        <section aria-labelledby="related-heading" className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="related-heading" className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-700" />
+              <span>संबंधित अन्य महत्वपूर्ण भर्तियां (Related Jobs & Exams)</span>
+            </h2>
+            <a
+              href={`/category/${categorySlug}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate(`category/${categorySlug}`);
+              }}
+              className="text-xs font-bold text-blue-700 hover:underline"
+            >
+              {categoryDisplayName} की सभी भर्तियां देखें →
+            </a>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {relatedPosts.slice(0, 4).map((rel) => (
               <a
@@ -703,20 +790,85 @@ export const JobDetailView: React.FC<Props> = ({
                 className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 cursor-pointer transition-all flex flex-col justify-between block group"
               >
                 <div>
-                  <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">{rel.categoryName}</span>
+                  <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">{rel.categoryName || rel.organization}</span>
                   <h3 className="font-bold text-xs sm:text-sm text-slate-900 leading-snug line-clamp-2 mt-1 group-hover:text-blue-700 transition-colors">
                     {rel.titleHindi || rel.title}
                   </h3>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2.5 pt-2 border-t border-slate-150">
                   <span>{rel.vacancy || 'विवरण देखें'}</span>
-                  <span className="text-blue-700 font-bold">देखें →</span>
+                  <span className="text-blue-700 font-bold">भर्ती विवरण देखें →</span>
                 </div>
               </a>
             ))}
           </div>
         </section>
       )}
+
+      {/* Explore Categories & Hub Internal Links */}
+      <section aria-label="Explore Recruitment Categories" className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm sm:text-base font-bold text-slate-900">
+            प्रमुख भर्ती श्रेणियां एवं परीक्षा पोर्टल लिंक
+          </h2>
+          <a
+            href="/categories"
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate('categories');
+            }}
+            className="text-xs font-bold text-blue-700 hover:underline"
+          >
+            समस्त श्रेणियां →
+          </a>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="/jobs"
+            onClick={(e) => { e.preventDefault(); onNavigate('jobs'); }}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 text-slate-800 hover:text-blue-800 rounded-lg text-xs font-semibold border border-slate-200 transition-colors"
+          >
+            सभी नवीनतम सरकारी नौकरियां
+          </a>
+          <a
+            href="/admit-cards"
+            onClick={(e) => { e.preventDefault(); onNavigate('admit-cards'); }}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 text-slate-800 hover:text-blue-800 rounded-lg text-xs font-semibold border border-slate-200 transition-colors"
+          >
+            मध्य प्रदेश एडमिट कार्ड 2026
+          </a>
+          <a
+            href="/results"
+            onClick={(e) => { e.preventDefault(); onNavigate('results'); }}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 text-slate-800 hover:text-blue-800 rounded-lg text-xs font-semibold border border-slate-200 transition-colors"
+          >
+            सरकारी परीक्षा परिणाम
+          </a>
+          <a
+            href="/answer-keys"
+            onClick={(e) => { e.preventDefault(); onNavigate('answer-keys'); }}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 text-slate-800 hover:text-blue-800 rounded-lg text-xs font-semibold border border-slate-200 transition-colors"
+          >
+            परीक्षा उत्तर कुंजी
+          </a>
+          {categories.filter(c => c.active !== false).slice(0, 8).map(cat => {
+            const cSlug = normalizeCategorySlug(cat.slug);
+            return (
+              <a
+                key={cat.id}
+                href={`/category/${cSlug}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate(`category/${cSlug}`);
+                }}
+                className="px-3 py-1.5 bg-blue-50/70 hover:bg-blue-100 text-blue-800 rounded-lg text-xs font-semibold border border-blue-200 transition-colors"
+              >
+                {cat.nameHindi}
+              </a>
+            );
+          })}
+        </div>
+      </section>
 
     </div>
   );

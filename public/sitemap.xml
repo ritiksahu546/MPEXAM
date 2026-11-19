@@ -1,196 +1,199 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Core Static Pages -->
   <url>
-    <loc>https://www.mpexamupdates.in/</loc>
+    <loc>https://mpexamupdates.in/</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>hourly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/jobs</loc>
+    <loc>https://mpexamupdates.in/jobs</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/admit-cards</loc>
+    <loc>https://mpexamupdates.in/admit-cards</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/results</loc>
+    <loc>https://mpexamupdates.in/results</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/answer-keys</loc>
+    <loc>https://mpexamupdates.in/answer-keys</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/categories</loc>
+    <loc>https://mpexamupdates.in/categories</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/about</loc>
+    <loc>https://mpexamupdates.in/about</loc>
     <lastmod>2026-03-01</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/contact</loc>
+    <loc>https://mpexamupdates.in/contact</loc>
     <lastmod>2026-03-01</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/privacy-policy</loc>
-    <lastmod>2026-03-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/terms-and-conditions</loc>
+    <loc>https://mpexamupdates.in/privacy-policy</loc>
     <lastmod>2026-03-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/disclaimer</loc>
+    <loc>https://mpexamupdates.in/terms-and-conditions</loc>
     <lastmod>2026-03-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/advertisement</loc>
+    <loc>https://mpexamupdates.in/disclaimer</loc>
+    <lastmod>2026-03-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/advertisement</loc>
     <lastmod>2026-03-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/category/mppsc</loc>
+    <loc>https://mpexamupdates.in/category/mppsc</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/category/mpesb</loc>
+    <loc>https://mpexamupdates.in/category/mpesb</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/category/mp-police</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/category/teacher-jobs</loc>
+    <loc>https://mpexamupdates.in/category/mp-police</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/category/patwari</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/category/panchayat</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/category/sarkari-naukri</loc>
+    <loc>https://mpexamupdates.in/category/teacher-jobs</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/category/central-jobs</loc>
+    <loc>https://mpexamupdates.in/category/patwari</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/category/panchayat</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/category/sarkari-naukri</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/category/admit-card</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/category/results</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/category/answer-key</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/category/syllabus</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/category/previous-papers</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/category/sarkari-yojana</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/category/exam-calendar</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.mpexamupdates.in/job/ssc-chsl-recruitment-2026-apply-online</loc>
+    <loc>https://mpexamupdates.in/category/central-jobs</loc>
     <lastmod>2026-09-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/job/ssc-selection-post-phase-14-city-intimation-2026</loc>
+    <loc>https://mpexamupdates.in/category/admit-card</loc>
+    <lastmod>2026-09-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/category/results</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/category/answer-key</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/category/syllabus</loc>
+    <lastmod>2026-09-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/category/previous-papers</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/category/sarkari-yojana</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/category/exam-calendar</loc>
+    <lastmod>2026-09-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/job/ssc-chsl-recruitment-2026-apply-online</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/job/ssc-je-recruitment-2026-apply-online</loc>
+    <loc>https://mpexamupdates.in/job/ssc-selection-post-phase-14-city-intimation-2026</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/job/mppsc-state-service-mains-admit-card-2026</loc>
+    <loc>https://mpexamupdates.in/job/ssc-je-recruitment-2026-apply-online</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/job/mpesb-eligibility-test-2026</loc>
+    <loc>https://mpexamupdates.in/job/mppsc-state-service-mains-admit-card-2026</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/job/mpesb-group-3-recruitment-2026</loc>
+    <loc>https://mpexamupdates.in/job/mpesb-eligibility-test-2026</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.mpexamupdates.in/job/mp-police-si-subedar-recruitment-2026</loc>
+    <loc>https://mpexamupdates.in/job/mpesb-group-3-recruitment-2026</loc>
+    <lastmod>2026-09-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://mpexamupdates.in/job/mp-police-si-subedar-recruitment-2026</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
