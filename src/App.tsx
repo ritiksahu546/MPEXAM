@@ -196,13 +196,8 @@ export default function App() {
     return cleanPath || 'home';
   }, [location.pathname]);
 
-  // Enforce non-www domain and normalize legacy category & hash URLs
+  // Normalize legacy category & hash URLs
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hostname === 'www.mpexamupdates.in') {
-      window.location.replace(`https://mpexamupdates.in${window.location.pathname}${window.location.search}${window.location.hash}`);
-      return;
-    }
-
     // Redirect legacy canonical category path if accessed directly
     const rawPath = location.pathname.replace(/^\//, '').split('?')[0].replace(/\/+$/, '');
     if (rawPath.startsWith('category/')) {

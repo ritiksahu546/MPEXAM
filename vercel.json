@@ -4,18 +4,7 @@
   "redirects": [
     {
       "source": "/category/central-government-jobs",
-      "destination": "https://mpexamupdates.in/category/central-jobs",
-      "permanent": true
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.mpexamupdates.in"
-        }
-      ],
-      "destination": "https://mpexamupdates.in/:path*",
+      "destination": "/category/central-jobs",
       "permanent": true
     }
   ],
