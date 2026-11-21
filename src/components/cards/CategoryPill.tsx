@@ -49,9 +49,18 @@ export const CategoryPill: React.FC<Props> = ({ category, isSelected = false, on
     }
   };
 
+  const targetHref =
+    canonicalSlug === 'admit-card'
+      ? '/admit-cards'
+      : canonicalSlug === 'results'
+        ? '/results'
+        : canonicalSlug === 'answer-key'
+          ? '/answer-keys'
+          : `/category/${canonicalSlug}`;
+
   return (
     <a
-      href={`/category/${canonicalSlug}`}
+      href={targetHref}
       onClick={(e) => {
         e.preventDefault();
         onClick(canonicalSlug);

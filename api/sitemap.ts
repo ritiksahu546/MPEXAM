@@ -1,16 +1,13 @@
 import { getLiveSitemapXml } from '../src/services/sitemapFetcher';
+import { DEFAULT_BASE_URL } from '../src/utils/sitemapGenerator';
 
 /**
  * Serverless handler for /sitemap.xml (Vercel / Cloud Run compatible).
  * Dynamically queries Firestore for all currently published posts and streams the XML response.
  */
-export default async function handler(req: any, res: any) {
+export default async function handler(_req: any, res: any) {
   try {
-    const host = req.headers?.['x-forwarded-host'] || req.headers?.host;
-    const protocol = req.headers?.['x-forwarded-proto'] || 'https';
-    const baseUrl = host ? `${protocol}://${host}` : undefined;
-
-    const xml = await getLiveSitemapXml(baseUrl);
+    const xml = await getLiveSitemapXml(DEFAULT_BASE_URL);
 
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     // Cache for 30 minutes on CDN, allow revalidation

@@ -6,6 +6,21 @@
       "source": "/category/central-government-jobs",
       "destination": "/category/central-jobs",
       "permanent": true
+    },
+    {
+      "source": "/category/admit-card",
+      "destination": "/admit-cards",
+      "permanent": true
+    },
+    {
+      "source": "/category/results",
+      "destination": "/results",
+      "permanent": true
+    },
+    {
+      "source": "/category/answer-key",
+      "destination": "/answer-keys",
+      "permanent": true
     }
   ],
   "rewrites": [

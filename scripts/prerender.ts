@@ -129,13 +129,37 @@ async function fetchPublishedData(): Promise<{ posts: Post[]; categories: Catego
   }
 }
 
+const HUB_ALIAS_CATEGORY_PATHS: Record<string, string> = {
+  'admit-card': '/admit-cards',
+  'results': '/results',
+  'answer-key': '/answer-keys'
+};
+
+function getCategoryHref(slug: string): string {
+  return HUB_ALIAS_CATEGORY_PATHS[slug] || `/category/${slug}`;
+}
+
+function formatCategoryLabel(nameHindi?: string, nameEnglish?: string): string {
+  const hi = (nameHindi || '').trim();
+  const en = (nameEnglish || '').trim();
+  if (!hi) return en;
+  if (!en || hi.toLowerCase().includes(en.toLowerCase())) return hi;
+  return `${hi} (${en})`;
+}
+
+function truncateText(text: string, maxLen: number): string {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (clean.length <= maxLen) return clean;
+  return `${clean.slice(0, maxLen).trim()}…`;
+}
+
 function buildSharedShell(
   innerMainHtml: string,
   canonicalCategories: Category[]
 ): string {
   const topCatLinks = canonicalCategories
     .slice(0, 10)
-    .map(c => `<a href="/category/${escapeAttr(c.slug)}" class="text-xs text-blue-700 hover:underline font-semibold">${escapeHtml(c.nameHindi || c.nameEnglish)}</a>`)
+    .map(c => `<a href="${escapeAttr(getCategoryHref(c.slug))}" class="text-xs text-blue-700 hover:underline font-semibold">${escapeHtml(c.nameHindi || c.nameEnglish)}</a>`)
     .join(' • ');
 
   return `
@@ -195,6 +219,8 @@ function renderPostsListHtml(postsList: Post[], emptyText: string): string {
       ${postsList.map(p => {
         const cleanSlug = normalizePostSlug(p.slug);
         const expired = isJobExpired(p.applicationLastDate);
+        const shortVacancy = p.vacancy ? truncateText(stripHtml(p.vacancy), 70) : '';
+        const shortQual = p.qualification ? truncateText(stripHtml(p.qualification), 90) : '';
         return `
           <article class="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
             <div class="flex items-center justify-between gap-2 text-xs text-slate-500">
@@ -205,10 +231,10 @@ function renderPostsListHtml(postsList: Post[], emptyText: string): string {
               <a href="/job/${escapeAttr(cleanSlug)}" class="text-blue-800 hover:underline">${escapeHtml(p.titleHindi || p.title)}</a>
             </h2>
             ${p.titleHindi && p.title && p.title !== p.titleHindi ? `<p class="text-xs text-slate-500 font-medium">${escapeHtml(p.title)}</p>` : ''}
-            ${p.excerpt ? `<p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(stripHtml(p.excerpt).slice(0, 180))}</p>` : ''}
+            ${p.excerpt ? `<p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(truncateText(stripHtml(p.excerpt), 160))}</p>` : ''}
             <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100 text-xs text-slate-700">
-              ${p.vacancy ? `<span>कुल पद: <strong>${escapeHtml(p.vacancy)}</strong></span>` : ''}
-              ${p.qualification ? `<span>योग्यता: <strong>${escapeHtml(p.qualification)}</strong></span>` : ''}
+              ${shortVacancy ? `<span>कुल पद: <strong>${escapeHtml(shortVacancy)}</strong></span>` : ''}
+              ${shortQual ? `<span>योग्यता: <strong>${escapeHtml(shortQual)}</strong></span>` : ''}
               ${p.applicationLastDate ? `<span>अंतिम तिथि: <strong class="text-red-600">${escapeHtml(p.applicationLastDate)}</strong></span>` : ''}
             </div>
             <div class="pt-1">
@@ -320,7 +346,7 @@ export async function runPrerender(): Promise<void> {
             MPPSC, MPESB (व्यापम), एमपी पुलिस, शिक्षक पात्रता परीक्षा (TET), पटवारी, केंद्र सरकार की भर्तियों, प्रवेश पत्र एवं परीक्षा परिणामों की सबसे तेज़ और प्रामाणिक जानकारी।
           </p>
           <div class="flex flex-wrap gap-2 pt-2">
-            ${canonicalCategories.map(c => `<a href="/category/${escapeAttr(c.slug)}" class="px-3 py-1.5 bg-blue-50 text-blue-800 rounded-lg text-xs font-bold border border-blue-200">${escapeHtml(c.nameHindi)}</a>`).join('')}
+            ${canonicalCategories.map(c => `<a href="${escapeAttr(getCategoryHref(c.slug))}" class="px-3 py-1.5 bg-blue-50 text-blue-800 rounded-lg text-xs font-bold border border-blue-200">${escapeHtml(c.nameHindi)}</a>`).join('')}
           </div>
         </section>
         <section class="space-y-4">
@@ -408,6 +434,7 @@ export async function runPrerender(): Promise<void> {
       description: 'मध्य प्रदेश सरकारी परीक्षा परिणाम, MPPSC व MPESB चयन सूची, मेरिट लिस्ट और कट-ऑफ अंक 2026 की आधिकारिक जानकारी।',
       canonicalUrl: `${BASE_URL}/results`,
       ogType: 'website',
+      noindex: resultPosts.length === 0,
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
@@ -428,7 +455,7 @@ export async function runPrerender(): Promise<void> {
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900">मध्य प्रदेश परीक्षा परिणाम (MP Sarkari Exam Results 2026)</h1>
           <p class="text-slate-600 text-sm">MPPSC, MPESB (व्यापम), पुलिस, पटवारी एवं शिक्षक भर्ती परीक्षाओं के आधिकारिक परिणाम, स्कोरकार्ड, कट-ऑफ अंक तथा अंतिम चयन सूची (Merit List) देखें।</p>
         </section>
-        ${renderPostsListHtml(resultPosts.length > 0 ? resultPosts : posts, 'नवीनतम परीक्षा परिणाम एवं भर्ती अपडेट्स नीचे देखें।')}
+        ${renderPostsListHtml(resultPosts, 'वर्तमान में कोई नया परीक्षा परिणाम प्रकाशित नहीं है। सक्रिय भर्तियां देखने के लिए नवीनतम नौकरियां पृष्ठ पर जाएं।')}
       `, canonicalCategories)
     },
 
@@ -439,6 +466,7 @@ export async function runPrerender(): Promise<void> {
       description: 'मध्य प्रदेश प्रतियोगी परीक्षाओं (MPPSC, MPESB व्यापम, पुलिस, शिक्षक भर्ती) की आधिकारिक उत्तर कुंजी, मॉडल उत्तर और आपत्ति दर्ज करने के सीधे लिंक।',
       canonicalUrl: `${BASE_URL}/answer-keys`,
       ogType: 'website',
+      noindex: answerKeyPosts.length === 0,
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
@@ -459,7 +487,7 @@ export async function runPrerender(): Promise<void> {
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900">मध्य प्रदेश परीक्षा उत्तर कुंजी (MP Exam Answer Key 2026)</h1>
           <p class="text-slate-600 text-sm">MPPSC और MPESB (व्यापम) द्वारा आयोजित लिखित व ऑनलाइन परीक्षाओं की प्रोविजनल एवं फाइनल उत्तर कुंजी (Model Answer Key PDF) डाउनलोड करें।</p>
         </section>
-        ${renderPostsListHtml(answerKeyPosts.length > 0 ? answerKeyPosts : posts, 'सभी परीक्षाओं की उत्तर कुंजी एवं संबंधित भर्ती सूचनाएं।')}
+        ${renderPostsListHtml(answerKeyPosts, 'वर्तमान में कोई नई उत्तर कुंजी प्रकाशित नहीं है। सभी सक्रिय भर्तियां और एडमिट कार्ड ऊपर मेन्यू से देखें।')}
       `, canonicalCategories)
     },
 
@@ -491,15 +519,19 @@ export async function runPrerender(): Promise<void> {
           <p class="text-slate-600 text-sm">मध्य प्रदेश एवं केंद्र सरकार के विभिन्न आयोगों, भर्ती बोर्डों और परीक्षा वर्गों की श्रेणीवार सूची।</p>
         </section>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          ${canonicalCategories.map(cat => `
-            <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-2">
-              <h2 class="text-lg font-bold text-slate-900">
-                <a href="/category/${escapeAttr(cat.slug)}" class="text-blue-800 hover:underline">${escapeHtml(cat.nameHindi)} (${escapeHtml(cat.nameEnglish)})</a>
-              </h2>
-              <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(cat.description || `${cat.nameHindi} से संबंधित सभी नवीनतम सरकारी नौकरियां, एडमिट कार्ड और परिणाम।`)}</p>
-              <a href="/category/${escapeAttr(cat.slug)}" class="inline-block text-xs font-bold text-blue-700 hover:underline">${escapeHtml(cat.nameHindi)} अपडेट्स देखें →</a>
-            </div>
-          `).join('')}
+          ${canonicalCategories.map(cat => {
+            const label = formatCategoryLabel(cat.nameHindi, cat.nameEnglish);
+            const href = getCategoryHref(cat.slug);
+            return `
+              <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-2">
+                <h2 class="text-lg font-bold text-slate-900">
+                  <a href="${escapeAttr(href)}" class="text-blue-800 hover:underline">${escapeHtml(label)}</a>
+                </h2>
+                <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(cat.description || `${cat.nameHindi} से संबंधित सभी नवीनतम सरकारी नौकरियां, एडमिट कार्ड और परिणाम।`)}</p>
+                <a href="${escapeAttr(href)}" class="inline-block text-xs font-bold text-blue-700 hover:underline">${escapeHtml(cat.nameHindi)} अपडेट्स देखें →</a>
+              </div>
+            `;
+          }).join('')}
         </div>
       `, canonicalCategories)
     },
@@ -719,28 +751,31 @@ export async function runPrerender(): Promise<void> {
     }
   ];
 
-  // 2. Category Hubs (/category/:slug)
+  // 2. Category Hubs (/category/:slug) — skip hub-alias categories that permanently redirect via vercel.json
   for (const cat of canonicalCategories) {
     const canonicalSlug = cat.slug;
+    if (HUB_ALIAS_CATEGORY_PATHS[canonicalSlug]) continue;
+
     const catName = cat.nameHindi || cat.nameEnglish || canonicalSlug;
     const catNameEn = cat.nameEnglish || canonicalSlug;
+    const displayLabel = formatCategoryLabel(catName, catNameEn);
     const matchingPosts = posts.filter(p => doesPostMatchCategory(p, cat, canonicalSlug));
-    const displayPosts = matchingPosts.length > 0 ? matchingPosts : posts.slice(0, 6);
     const catDescription = cat.description
-      ? `${cat.description}। ${catName} (${catNameEn}) 2026 की नवीनतम भर्ती विज्ञप्ति, पात्रता, परीक्षा तिथि, एडमिट कार्ड और परिणाम।`
-      : `${catName} (${catNameEn}) 2026 से जुड़ी सभी नवीनतम सरकारी नौकरियां, ऑनलाइन आवेदन, परीक्षा तिथियां, एडमिट कार्ड और परिणाम की आधिकारिक अपडेट।`;
+      ? `${cat.description}। ${displayLabel} 2026 की नवीनतम भर्ती विज्ञप्ति, पात्रता, परीक्षा तिथि, एडमिट कार्ड और परिणाम।`
+      : `${displayLabel} 2026 से जुड़ी सभी नवीनतम सरकारी नौकरियां, ऑनलाइन आवेदन, परीक्षा तिथियां, एडमिट कार्ड और परिणाम की आधिकारिक अपडेट।`;
 
     routes.push({
       route: `category/${canonicalSlug}`,
-      title: `${catName} (${catNameEn}) भर्ती एवं परीक्षा अपडेट 2026 | MP Exam Update`,
+      title: `${displayLabel} भर्ती एवं परीक्षा अपडेट 2026 | MP Exam Update`,
       description: catDescription.slice(0, 165),
       canonicalUrl: `${BASE_URL}/category/${canonicalSlug}`,
       ogType: 'website',
+      noindex: matchingPosts.length === 0,
       jsonLd: [
         {
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
-          'name': `${catName} (${catNameEn}) भर्ती एवं परीक्षा अपडेट 2026`,
+          'name': `${displayLabel} भर्ती एवं परीक्षा अपडेट 2026`,
           'description': catDescription,
           'url': `${BASE_URL}/category/${canonicalSlug}`
         },
@@ -761,14 +796,14 @@ export async function runPrerender(): Promise<void> {
           <span>${escapeHtml(catName)}</span>
         </nav>
         <section class="bg-white p-6 rounded-2xl border border-slate-200 space-y-2">
-          <h1 class="text-2xl sm:text-3xl font-black text-slate-900">${escapeHtml(catName)} (${escapeHtml(catNameEn)}) — भर्ती, एडमिट कार्ड एवं रिजल्ट 2026</h1>
+          <h1 class="text-2xl sm:text-3xl font-black text-slate-900">${escapeHtml(displayLabel)} — भर्ती, एडमिट कार्ड एवं रिजल्ट 2026</h1>
           <p class="text-slate-600 text-sm leading-relaxed">${escapeHtml(catDescription)}</p>
         </section>
         <section class="space-y-4">
           <h2 class="text-lg font-bold text-slate-900">
-            ${matchingPosts.length > 0 ? `${escapeHtml(catName)} की नवीनतम अधिसूचनाएं (${matchingPosts.length})` : `${escapeHtml(catName)} एवं अन्य प्रमुख सक्रिय भर्तियां`}
+            ${matchingPosts.length > 0 ? `${escapeHtml(catName)} की नवीनतम अधिसूचनाएं (${matchingPosts.length})` : `${escapeHtml(catName)} — नई अधिसूचनाएं जल्द प्रकाशित होंगी`}
           </h2>
-          ${renderPostsListHtml(displayPosts, 'इस श्रेणी में नई अधिसूचनाएं जल्द जोड़ी जाएंगी।')}
+          ${renderPostsListHtml(matchingPosts, 'वर्तमान में इस श्रेणी में कोई सक्रिय अधिसूचना उपलब्ध नहीं है। अन्य नवीनतम भर्तियां देखने के लिए सभी नौकरियां पृष्ठ पर जाएं।')}
         </section>
       `, canonicalCategories)
     });

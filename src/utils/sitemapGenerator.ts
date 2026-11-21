@@ -264,33 +264,48 @@ export function generateSitemapXml(
     });
   };
 
-  // 2. Core Static & Hub Pages
+  const admitCardPosts = publishedPosts.filter(p => doesPostMatchCategory(p, null, 'admit-card'));
+  const resultPosts = publishedPosts.filter(p => doesPostMatchCategory(p, null, 'results'));
+  const answerKeyPosts = publishedPosts.filter(p => doesPostMatchCategory(p, null, 'answer-key'));
+
+  const getLatestDateForPosts = (list: Post[]): string | undefined => {
+    const dates = list
+      .map(p => formatDateToYMD(p.updatedAt || p.publishedAt || p.createdAt))
+      .filter((d): d is string => Boolean(d))
+      .sort((a, b) => b.localeCompare(a));
+    return dates[0];
+  };
+
+  // 2. Core Static & Hub Pages (only include populated exam hubs so sitemap has zero thin/empty pages)
   const staticPages: SitemapUrlEntry[] = [
     { loc: `${normalizedBaseUrl}/`, lastmod: latestGlobalPostDate, changefreq: 'hourly', priority: '1.0' },
     { loc: `${normalizedBaseUrl}/jobs`, lastmod: latestGlobalPostDate, changefreq: 'daily', priority: '0.9' },
-    { loc: `${normalizedBaseUrl}/admit-cards`, lastmod: latestGlobalPostDate, changefreq: 'daily', priority: '0.9' },
-    { loc: `${normalizedBaseUrl}/results`, lastmod: latestGlobalPostDate, changefreq: 'daily', priority: '0.9' },
-    { loc: `${normalizedBaseUrl}/answer-keys`, lastmod: latestGlobalPostDate, changefreq: 'daily', priority: '0.8' },
+    ...(admitCardPosts.length > 0
+      ? [{ loc: `${normalizedBaseUrl}/admit-cards`, lastmod: getLatestDateForPosts(admitCardPosts), changefreq: 'daily', priority: '0.9' }]
+      : []),
+    ...(resultPosts.length > 0
+      ? [{ loc: `${normalizedBaseUrl}/results`, lastmod: getLatestDateForPosts(resultPosts), changefreq: 'daily', priority: '0.9' }]
+      : []),
+    ...(answerKeyPosts.length > 0
+      ? [{ loc: `${normalizedBaseUrl}/answer-keys`, lastmod: getLatestDateForPosts(answerKeyPosts), changefreq: 'daily', priority: '0.8' }]
+      : []),
     { loc: `${normalizedBaseUrl}/categories`, lastmod: latestGlobalPostDate, changefreq: 'weekly', priority: '0.8' },
     { loc: `${normalizedBaseUrl}/about`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.6' },
-    { loc: `${normalizedBaseUrl}/contact`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.6' },
-    { loc: `${normalizedBaseUrl}/privacy-policy`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.4' },
-    { loc: `${normalizedBaseUrl}/terms-and-conditions`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.4' },
-    { loc: `${normalizedBaseUrl}/disclaimer`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.4' },
-    { loc: `${normalizedBaseUrl}/advertisement`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.5' }
+    { loc: `${normalizedBaseUrl}/contact`, lastmod: '2026-03-01', changefreq: 'monthly', priority: '0.6' }
   ];
 
   for (const page of staticPages) {
     addUrlEntry(page);
   }
 
-  // 3. Category Pages - Deduplicated by canonical slug
+  // 3. Category Pages - Deduplicated by canonical slug, excluding duplicate hub aliases & empty categories
+  const HUB_ALIAS_CATEGORY_SLUGS = new Set(['admit-card', 'results', 'answer-key']);
   const canonicalCategoriesMap = new Map<string, { category: Category; posts: Post[] }>();
 
   for (const cat of categories) {
     if (!cat || !cat.slug || (cat as Category & { active?: boolean }).active === false) continue;
     const canonicalSlug = normalizeCategorySlug(cat.slug);
-    if (!canonicalSlug) continue;
+    if (!canonicalSlug || HUB_ALIAS_CATEGORY_SLUGS.has(canonicalSlug)) continue;
 
     const catPosts = publishedPosts.filter(p => doesPostMatchCategory(p, cat, canonicalSlug));
 
@@ -309,22 +324,15 @@ export function generateSitemapXml(
     }
   }
 
-  // Sort canonical categories consistently
+  // Sort canonical categories consistently and include ONLY categories that currently have published posts
   const sortedCanonicalEntries = Array.from(canonicalCategoriesMap.entries()).sort(
     ([slugA, a], [slugB, b]) => (a.category.order || 0) - (b.category.order || 0) || slugA.localeCompare(slugB)
   );
 
   for (const [canonicalSlug, data] of sortedCanonicalEntries) {
-    let catLastmod: string | undefined = undefined;
-    if (data.posts.length > 0) {
-      const catDates = data.posts
-        .map(p => formatDateToYMD(p.updatedAt || p.publishedAt || p.createdAt))
-        .filter((d): d is string => Boolean(d))
-        .sort((a, b) => b.localeCompare(a));
-      if (catDates.length > 0) {
-        catLastmod = catDates[0];
-      }
-    }
+    if (data.posts.length === 0) continue;
+
+    const catLastmod = getLatestDateForPosts(data.posts);
 
     addUrlEntry({
       loc: `${normalizedBaseUrl}/category/${canonicalSlug}`,

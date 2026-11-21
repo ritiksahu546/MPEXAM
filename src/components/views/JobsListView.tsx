@@ -201,15 +201,34 @@ export const JobsListView: React.FC<Props> = ({
 
   const computedCanonical = normalizeCanonicalUrl(rawCanonical);
 
+  const formatCatLabel = (hi?: string, en?: string) => {
+    const cleanHi = (hi || '').trim();
+    const cleanEn = (en || '').trim();
+    if (!cleanHi) return cleanEn;
+    if (!cleanEn || cleanHi.toLowerCase().includes(cleanEn.toLowerCase())) return cleanHi;
+    return `${cleanHi} (${cleanEn})`;
+  };
+
+  const activeCategoryLabel = activeCategoryObj
+    ? formatCatLabel(activeCategoryObj.nameHindi, activeCategoryObj.nameEnglish || activeCategoryCanonicalSlug)
+    : '';
+
   const seoTitle = activeCategoryObj
-    ? `${activeCategoryObj.nameHindi} (${activeCategoryObj.nameEnglish || activeCategoryCanonicalSlug}) भर्ती एवं परीक्षा अपडेट 2026`
+    ? `${activeCategoryLabel} भर्ती एवं परीक्षा अपडेट 2026`
     : pageTitle;
 
   const seoDescription = activeCategoryObj
-    ? `${activeCategoryObj.description || activeCategoryObj.nameHindi}। ${activeCategoryObj.nameHindi} (${activeCategoryObj.nameEnglish || ''}) 2026 की नवीनतम भर्ती विज्ञप्ति, ऑनलाइन आवेदन, पात्रता, एडमिट कार्ड और परिणाम।`
+    ? `${activeCategoryObj.description || activeCategoryObj.nameHindi}। ${activeCategoryLabel} 2026 की नवीनतम भर्ती विज्ञप्ति, ऑनलाइन आवेदन, पात्रता, एडमिट कार्ड और परिणाम।`
     : `${pageTitle} - मध्य प्रदेश सरकारी भर्ती, परीक्षा, प्रवेश पत्र, रिजल्ट एवं उत्तर कुंजी की नवीनतम आधिकारिक सूची।`;
 
   const isCategoriesHub = canonicalPath === 'categories';
+  const isUnfilteredEmptyHub =
+    !isCategoriesHub &&
+    !searchFilter.trim() &&
+    selectedQualification === 'all' &&
+    selectedTag === 'all' &&
+    filteredPosts.length === 0;
+  const effectiveNoindex = noindex || isUnfilteredEmptyHub;
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-6">
@@ -219,7 +238,7 @@ export const JobsListView: React.FC<Props> = ({
         title={seoTitle}
         description={seoDescription}
         canonicalUrl={computedCanonical}
-        noindex={noindex}
+        noindex={effectiveNoindex}
         ogType="website"
         breadcrumbs={
           activeCategoryObj
@@ -252,7 +271,7 @@ export const JobsListView: React.FC<Props> = ({
       <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
-            {activeCategoryObj ? `${activeCategoryObj.nameHindi} (${activeCategoryObj.nameEnglish || 'भर्ती'}) — नवीनतम अपडेट 2026` : pageTitle}
+            {activeCategoryObj ? `${activeCategoryLabel} — नवीनतम अपडेट 2026` : pageTitle}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             {activeCategoryObj?.description || 'मध्य प्रदेश के समस्त सरकारी विभागों की नवीनतम भर्तियों, एडमिट कार्ड व परीक्षा परिणामों की सूची'}
@@ -280,30 +299,40 @@ export const JobsListView: React.FC<Props> = ({
             प्रमुख भर्ती बोर्ड एवं परीक्षा श्रेणियां (Browse by Category)
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {canonicalCategories.map(cat => (
-              <a
-                key={cat.slug}
-                href={`/category/${cat.slug}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onNavigate(`category/${cat.slug}`);
-                }}
-                className="bg-white p-4 rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-xs transition-all flex flex-col justify-between group"
-              >
-                <div>
-                  <h3 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-blue-700">
-                    {cat.nameHindi} ({cat.nameEnglish})
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                    {cat.description || `${cat.nameHindi} से जुड़ी सभी नवीनतम सरकारी नौकरियां, एडमिट कार्ड और परिणाम।`}
-                  </p>
-                </div>
-                <span className="text-xs font-bold text-blue-700 mt-3 inline-flex items-center gap-1">
-                  <span>{cat.nameHindi} अपडेट्स देखें</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </span>
-              </a>
-            ))}
+            {canonicalCategories.map(cat => {
+              const routePath =
+                cat.slug === 'admit-card'
+                  ? 'admit-cards'
+                  : cat.slug === 'results'
+                    ? 'results'
+                    : cat.slug === 'answer-key'
+                      ? 'answer-keys'
+                      : `category/${cat.slug}`;
+              return (
+                <a
+                  key={cat.slug}
+                  href={`/${routePath}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onNavigate(routePath);
+                  }}
+                  className="bg-white p-4 rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-xs transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    <h3 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-blue-700">
+                      {formatCatLabel(cat.nameHindi, cat.nameEnglish)}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                      {cat.description || `${cat.nameHindi} से जुड़ी सभी नवीनतम सरकारी नौकरियां, एडमिट कार्ड और परिणाम।`}
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-blue-700 mt-3 inline-flex items-center gap-1">
+                    <span>{cat.nameHindi} अपडेट्स देखें</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </span>
+                </a>
+              );
+            })}
           </div>
         </section>
       )}

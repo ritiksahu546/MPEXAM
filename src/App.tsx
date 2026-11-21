@@ -198,11 +198,23 @@ export default function App() {
 
   // Normalize legacy category & hash URLs
   useEffect(() => {
-    // Redirect legacy canonical category path if accessed directly
+    // Redirect legacy & hub-alias category paths to their canonical routes
     const rawPath = location.pathname.replace(/^\//, '').split('?')[0].replace(/\/+$/, '');
     if (rawPath.startsWith('category/')) {
       const slug = rawPath.replace(/^category\//, '');
       const normalized = normalizeCategorySlug(slug);
+      if (normalized === 'admit-card') {
+        routerNavigate('/admit-cards', { replace: true });
+        return;
+      }
+      if (normalized === 'results') {
+        routerNavigate('/results', { replace: true });
+        return;
+      }
+      if (normalized === 'answer-key') {
+        routerNavigate('/answer-keys', { replace: true });
+        return;
+      }
       if (normalized && normalized !== slug.toLowerCase()) {
         routerNavigate(`/category/${normalized}`, { replace: true });
       }
